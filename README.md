@@ -8,6 +8,7 @@ This project is a static HTML/CSS/JavaScript app using browser localStorage.
 No backend is required for basic usage.
 
 Main goals:
+
 - User authentication flow (register/login/logout)
 - Add full fishing experience records
 - Search and filter fishing logs
@@ -60,6 +61,7 @@ Main goals:
 ## Data Storage
 
 This app stores data in browser localStorage keys:
+
 - flb_users
 - flb_current_user
 - flb_catches

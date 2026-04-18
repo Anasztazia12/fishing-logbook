@@ -20,17 +20,15 @@
                 <label for="catchDate">Date</label>
                 <input type="date" id="catchDate" name="catchDate" required>
 
-                <fieldset class="inline-fieldset">
-                    <legend>Place input type</legend>
-                    <label><input type="radio" name="placeType" value="name" checked> Place name</label>
-                    <label><input type="radio" name="placeType" value="link"> Place link</label>
-                </fieldset>
-
                 <label for="placeName">Place name</label>
                 <input type="text" id="placeName" name="placeName" placeholder="Example: Edinburgh, Union Canal">
 
                 <label for="placeLink">Place link</label>
                 <input type="url" id="placeLink" name="placeLink" placeholder="https://example.com/fishing-spot">
+
+                <label for="mapsLink">Google Maps link</label>
+                <input type="url" id="mapsLink" name="mapsLink" placeholder="https://maps.google.com/...">
+                <p class="field-hint">You can type a place name, add a link, add a Google Maps link, or use all of them together.</p>
 
                 <label for="fishCount">Caught fish count</label>
                 <input type="number" id="fishCount" name="fishCount" min="0" required>

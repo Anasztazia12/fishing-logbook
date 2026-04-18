@@ -6,6 +6,32 @@ const STORAGE = {
     language: "flb_language"
 };
 
+const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyCBLFecNN1GGyAI3XotVZWwz8HO8PK-Jzo",
+    authDomain: "fishing-logbook-a8851.firebaseapp.com",
+    projectId: "fishing-logbook-a8851",
+    storageBucket: "fishing-logbook-a8851.firebasestorage.app",
+    messagingSenderId: "151846552983",
+    appId: "1:151846552983:web:2d6dc9640e3292b010f0d2",
+    measurementId: "G-ZK5QXB7B8P"
+};
+
+const FIREBASE_SDK_URLS = [
+    "https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js",
+    "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js",
+    "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js",
+    "https://www.gstatic.com/firebasejs/10.12.5/firebase-storage-compat.js",
+    "https://www.gstatic.com/firebasejs/10.12.5/firebase-analytics-compat.js"
+];
+
+const firebaseState = {
+    enabled: false,
+    app: null,
+    auth: null,
+    db: null,
+    storage: null
+};
+
 const PUBLIC_PAGES = new Set(["index", "login", "register"]);
 const SUPPORTED_LANGUAGES = new Set(["en", "hu"]);
 
@@ -56,13 +82,13 @@ const I18N = {
         "add.title": "Add new fishing experience",
         "add.subtitle": "Save your full result: place, fish count, fish data, photos and notes.",
         "add.date": "Date",
-        "add.placeInputType": "Place input type",
-        "add.placeNameOption": "Place name",
-        "add.placeLinkOption": "Place link",
         "add.placeName": "Place name",
         "add.placeNamePh": "Example: Edinburgh, Union Canal",
         "add.placeLink": "Place link",
         "add.placeLinkPh": "https://example.com/fishing-spot",
+        "add.mapsLink": "Google Maps link",
+        "add.mapsLinkPh": "https://maps.google.com/...",
+        "add.placeHint": "You can type a place name, add a link, add a Google Maps link, or use all of them together.",
         "add.fishCount": "Caught fish count",
         "add.fishDetails": "Fish details (type + weight)",
         "add.addFishRow": "Add fish row",
@@ -70,8 +96,7 @@ const I18N = {
         "add.notes": "Notes",
         "add.notesPh": "What happened on this fishing trip?",
         "add.save": "Save fishing result",
-        "add.providePlaceName": "Please provide a place name.",
-        "add.providePlaceLink": "Please provide a place link.",
+        "add.provideAnyPlace": "Please add at least one place field (name, place link, or Google Maps link).",
         "add.addFishDetail": "Add at least one fish detail row.",
         "add.saved": "Fishing result saved successfully.",
         "add.fishType": "Fish type",
@@ -98,6 +123,10 @@ const I18N = {
         "details.notFound": "Catch not found.",
         "details.date": "Date",
         "details.place": "Place",
+        "details.placeName": "Place name",
+        "details.placeLink": "Place link",
+        "details.mapsLink": "Google Maps",
+        "details.openMap": "Open map",
         "details.caughtCount": "Caught fish count",
         "details.largest": "Largest fish",
         "details.fishList": "Fish list",
@@ -166,13 +195,13 @@ const I18N = {
         "add.title": "Uj horgaszati elmeny rogzitese",
         "add.subtitle": "Mentsd el a teljes eredmenyt: helyszin, halszam, hal adatok, fotok es jegyzet.",
         "add.date": "Datum",
-        "add.placeInputType": "Helyszin megadasa",
-        "add.placeNameOption": "Helyszin neve",
-        "add.placeLinkOption": "Helyszin link",
         "add.placeName": "Helyszin neve",
         "add.placeNamePh": "Pelda: Edinburgh, Union Canal",
         "add.placeLink": "Helyszin link",
         "add.placeLinkPh": "https://pelda.hu/horgasz-helyszin",
+        "add.mapsLink": "Google Maps link",
+        "add.mapsLinkPh": "https://maps.google.com/...",
+        "add.placeHint": "Megadhatsz helyszin nevet, linket, Google Maps linket, vagy ezeket egyutt is.",
         "add.fishCount": "Kifogott halak szama",
         "add.fishDetails": "Hal adatok (tipus + suly)",
         "add.addFishRow": "Hal sor hozzaadasa",
@@ -180,8 +209,7 @@ const I18N = {
         "add.notes": "Jegyzet",
         "add.notesPh": "Mi tortent ezen a horgaszaton?",
         "add.save": "Horgaszati eredmeny mentese",
-        "add.providePlaceName": "Add meg a helyszin nevet.",
-        "add.providePlaceLink": "Add meg a helyszin linkjet.",
+        "add.provideAnyPlace": "Adj meg legalabb egy helyszin adatot (nev, helyszin link vagy Google Maps link).",
         "add.addFishDetail": "Adj hozza legalabb egy hal sort.",
         "add.saved": "A horgaszati eredmeny sikeresen elmentve.",
         "add.fishType": "Hal tipusa",
@@ -208,6 +236,10 @@ const I18N = {
         "details.notFound": "A fogas nem talalhato.",
         "details.date": "Datum",
         "details.place": "Helyszin",
+        "details.placeName": "Helyszin neve",
+        "details.placeLink": "Helyszin link",
+        "details.mapsLink": "Google Maps",
+        "details.openMap": "Terkep megnyitasa",
         "details.caughtCount": "Kifogott halak szama",
         "details.largest": "Legnagyobb hal",
         "details.fishList": "Halfaj lista",
@@ -235,7 +267,17 @@ const I18N = {
 let currentLanguage = getLanguage();
 
 document.addEventListener("DOMContentLoaded", () => {
-    seedDemoData();
+    void bootstrapApp();
+});
+
+async function bootstrapApp() {
+    await loadFirebaseSdk();
+    initFirebase();
+    await syncAuthState();
+
+    if (!firebaseState.enabled) {
+        seedDemoData();
+    }
 
     const page = document.body.dataset.page;
     const user = getCurrentUser();
@@ -249,30 +291,114 @@ document.addEventListener("DOMContentLoaded", () => {
             initIndex(user);
             break;
         case "register":
-            initRegister();
+            await initRegister();
             break;
         case "login":
-            initLogin();
+            await initLogin();
             break;
         case "dashboard":
-            initDashboard(user);
+            await initDashboard(user);
             break;
         case "add-catch":
-            initAddCatch(user);
+            await initAddCatch(user);
             break;
         case "logbook":
-            initLogbook(user);
+            await initLogbook(user);
             break;
         case "catch-details":
-            initCatchDetails(user);
+            await initCatchDetails(user);
             break;
         case "places":
-            initPlaces(user);
+            await initPlaces(user);
             break;
         default:
             break;
     }
-});
+}
+
+async function loadFirebaseSdk() {
+    if (window.firebase) {
+        return;
+    }
+
+    try {
+        for (const url of FIREBASE_SDK_URLS) {
+            await injectScript(url);
+        }
+    } catch {
+        // SDK load failure keeps app functional via localStorage fallback.
+    }
+}
+
+function injectScript(src) {
+    return new Promise((resolve, reject) => {
+        const existing = document.querySelector(`script[data-sdk="${src}"]`);
+        if (existing) {
+            resolve();
+            return;
+        }
+
+        const script = document.createElement("script");
+        script.src = src;
+        script.async = true;
+        script.dataset.sdk = src;
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error(`Failed to load script: ${src}`));
+        document.head.appendChild(script);
+    });
+}
+
+function initFirebase() {
+    if (!window.firebase) {
+        firebaseState.enabled = false;
+        return;
+    }
+
+    try {
+        const app = window.firebase.apps.length
+            ? window.firebase.app()
+            : window.firebase.initializeApp(FIREBASE_CONFIG);
+
+        firebaseState.enabled = true;
+        firebaseState.app = app;
+        firebaseState.auth = window.firebase.auth();
+        firebaseState.db = window.firebase.firestore();
+        firebaseState.storage = window.firebase.storage();
+
+        try {
+            if (window.location.protocol.startsWith("http")) {
+                window.firebase.analytics();
+            }
+        } catch {
+            // Analytics is optional.
+        }
+    } catch {
+        firebaseState.enabled = false;
+    }
+}
+
+async function syncAuthState() {
+    if (!firebaseState.enabled || !firebaseState.auth) {
+        return;
+    }
+
+    await new Promise((resolve) => {
+        const unsubscribe = firebaseState.auth.onAuthStateChanged((authUser) => {
+            if (!authUser) {
+                localStorage.removeItem(STORAGE.currentUser);
+            } else {
+                localStorage.setItem(STORAGE.currentUser, JSON.stringify({
+                    id: authUser.uid,
+                    username: authUser.displayName || authUser.email || "User",
+                    email: authUser.email || ""
+                }));
+            }
+
+            unsubscribe();
+            resolve();
+        });
+    });
+}
 
 function seedDemoData() {
     if (localStorage.getItem(STORAGE.seeded)) {
@@ -284,9 +410,9 @@ function seedDemoData() {
         id: crypto.randomUUID(),
         userId: "demo-user",
         date: "2026-03-24",
-        placeType: "name",
         placeName: "Edinburgh - Union Canal",
         placeLink: "",
+        mapsLink: "",
         fishCount: 3,
         fishItems: [
             { type: "Pike", weight: 4.2 },
@@ -331,7 +457,11 @@ function renderNav(user) {
 
         const logout = document.getElementById("logoutBtn");
         if (logout) {
-            logout.addEventListener("click", () => {
+            logout.addEventListener("click", async () => {
+                if (firebaseState.enabled && firebaseState.auth) {
+                    await firebaseState.auth.signOut();
+                }
+
                 localStorage.removeItem(STORAGE.currentUser);
                 window.location.href = "index.html";
             });
@@ -373,7 +503,7 @@ function initIndex(user) {
     }
 }
 
-function initRegister() {
+async function initRegister() {
     const form = document.getElementById("registerForm");
     const msg = document.getElementById("registerMessage");
 
@@ -381,13 +511,37 @@ function initRegister() {
         return;
     }
 
-    form.addEventListener("submit", (event) => {
+    form.addEventListener("submit", async (event) => {
         event.preventDefault();
 
         const formData = new FormData(form);
         const username = String(formData.get("username") || "").trim();
         const email = String(formData.get("email") || "").trim().toLowerCase();
         const password = String(formData.get("password") || "").trim();
+
+        if (firebaseState.enabled && firebaseState.auth) {
+            try {
+                const credential = await firebaseState.auth.createUserWithEmailAndPassword(email, password);
+                if (credential.user) {
+                    await credential.user.updateProfile({ displayName: username });
+                    localStorage.setItem(STORAGE.currentUser, JSON.stringify({
+                        id: credential.user.uid,
+                        username: username || credential.user.email || "User",
+                        email: credential.user.email || email
+                    }));
+                }
+
+                setMessage(msg, t("register.success", { fallback: "Registration successful. Redirecting..." }), true);
+                setTimeout(() => {
+                    window.location.href = "dashboard.html";
+                }, 600);
+                return;
+            } catch (error) {
+                const message = parseFirebaseError(error, t("register.failed", { fallback: "Registration failed." }));
+                setMessage(msg, message, false);
+                return;
+            }
+        }
 
         const users = readStorage(STORAGE.users, []);
         const alreadyExists = users.some((u) => u.email === email);
@@ -415,7 +569,7 @@ function initRegister() {
     });
 }
 
-function initLogin() {
+async function initLogin() {
     const form = document.getElementById("loginForm");
     const msg = document.getElementById("loginMessage");
 
@@ -423,12 +577,34 @@ function initLogin() {
         return;
     }
 
-    form.addEventListener("submit", (event) => {
+    form.addEventListener("submit", async (event) => {
         event.preventDefault();
 
         const formData = new FormData(form);
         const email = String(formData.get("email") || "").trim().toLowerCase();
         const password = String(formData.get("password") || "").trim();
+
+        if (firebaseState.enabled && firebaseState.auth) {
+            try {
+                const credential = await firebaseState.auth.signInWithEmailAndPassword(email, password);
+                const authUser = credential.user;
+                localStorage.setItem(STORAGE.currentUser, JSON.stringify({
+                    id: authUser.uid,
+                    username: authUser.displayName || authUser.email || "User",
+                    email: authUser.email || email
+                }));
+
+                setMessage(msg, t("login.success", { fallback: "Login successful. Redirecting..." }), true);
+                setTimeout(() => {
+                    window.location.href = "dashboard.html";
+                }, 500);
+                return;
+            } catch (error) {
+                const message = parseFirebaseError(error, t("login.invalid", { fallback: "Invalid email or password." }));
+                setMessage(msg, message, false);
+                return;
+            }
+        }
 
         const users = readStorage(STORAGE.users, []);
         const found = users.find((u) => u.email === email && u.password === password);
@@ -447,7 +623,7 @@ function initLogin() {
     });
 }
 
-function initDashboard(user) {
+async function initDashboard(user) {
     if (!user) {
         return;
     }
@@ -463,7 +639,7 @@ function initDashboard(user) {
         return;
     }
 
-    const catches = getUserCatches(user.id).slice(0, 4);
+    const catches = (await getUserCatches(user.id)).slice(0, 4);
 
     if (catches.length === 0) {
         recent.innerHTML = `<article class="list-item"><p>${t("dashboard.noCatches")}</p></article>`;
@@ -473,7 +649,7 @@ function initDashboard(user) {
     recent.innerHTML = catches.map((item) => renderCatchCard(item, true)).join("");
 }
 
-function initAddCatch(user) {
+async function initAddCatch(user) {
     if (!user) {
         return;
     }
@@ -517,17 +693,12 @@ function initAddCatch(user) {
         event.preventDefault();
 
         const data = new FormData(form);
-        const placeType = String(data.get("placeType") || "name");
         const placeName = String(data.get("placeName") || "").trim();
         const placeLink = String(data.get("placeLink") || "").trim();
+        const mapsLink = String(data.get("mapsLink") || "").trim();
 
-        if (placeType === "name" && !placeName) {
-            setMessage(msg, t("add.providePlaceName"), false);
-            return;
-        }
-
-        if (placeType === "link" && !placeLink) {
-            setMessage(msg, t("add.providePlaceLink"), false);
+        if (!placeName && !placeLink && !mapsLink) {
+            setMessage(msg, t("add.provideAnyPlace"), false);
             return;
         }
 
@@ -537,16 +708,17 @@ function initAddCatch(user) {
             return;
         }
 
-        const imageData = await filesToBase64(Array.from(imageInput.files || []));
+        const catchId = crypto.randomUUID();
+        const imageData = await saveImages(Array.from(imageInput.files || []), user.id, catchId);
         const fishCount = Number(data.get("fishCount") || 0);
 
         const newCatch = {
-            id: crypto.randomUUID(),
+            id: catchId,
             userId: user.id,
             date: String(data.get("catchDate") || "").trim(),
-            placeType,
             placeName,
             placeLink,
+            mapsLink,
             fishCount,
             fishItems,
             imageData,
@@ -554,9 +726,7 @@ function initAddCatch(user) {
             createdAt: new Date().toISOString()
         };
 
-        const catches = readStorage(STORAGE.catches, []);
-        catches.unshift(newCatch);
-        writeStorage(STORAGE.catches, catches);
+        await saveCatch(newCatch);
 
         setMessage(msg, t("add.saved"), true);
         form.reset();
@@ -567,11 +737,10 @@ function initAddCatch(user) {
     });
 }
 
-function initLogbook(user) {
+async function initLogbook(user) {
     if (!user) {
         return;
     }
-
     const form = document.getElementById("filterForm");
     const clearBtn = document.getElementById("clearFilters");
     const container = document.getElementById("logbookList");
@@ -589,8 +758,9 @@ function initLogbook(user) {
         }
     }
 
+    const catches = await getUserCatches(user.id);
+
     const render = () => {
-        const catches = getUserCatches(user.id);
         const filtered = filterCatches(catches, new FormData(form));
         count.textContent = t("logbook.resultCount", { count: filtered.length });
 
@@ -615,7 +785,7 @@ function initLogbook(user) {
     render();
 }
 
-function initCatchDetails(user) {
+async function initCatchDetails(user) {
     if (!user) {
         return;
     }
@@ -631,7 +801,7 @@ function initCatchDetails(user) {
         return;
     }
 
-    const catches = getUserCatches(user.id);
+    const catches = await getUserCatches(user.id);
     const selected = catches.find((item) => item.id === id);
 
     if (!selected) {
@@ -639,9 +809,15 @@ function initCatchDetails(user) {
         return;
     }
 
-    const place = selected.placeType === "link"
+    const placeName = selected.placeName
+        ? escapeHtml(selected.placeName)
+        : "-";
+    const placeLink = selected.placeLink
         ? `<a href="${escapeHtml(selected.placeLink)}" target="_blank" rel="noopener">${escapeHtml(selected.placeLink)}</a>`
-        : escapeHtml(selected.placeName);
+        : "-";
+    const mapsLink = selected.mapsLink
+        ? `<a href="${escapeHtml(selected.mapsLink)}" target="_blank" rel="noopener">${t("details.openMap")}</a>`
+        : "-";
 
     const fishRows = selected.fishItems
         .map((fish) => `<tr><td>${escapeHtml(fish.type)}</td><td>${toFixed(fish.weight)} kg</td></tr>`)
@@ -654,7 +830,9 @@ function initCatchDetails(user) {
     container.innerHTML = [
         `<div class="detail-grid">`,
         `<p><strong>${t("details.date")}:</strong> ${escapeHtml(selected.date)}</p>`,
-        `<p><strong>${t("details.place")}:</strong> ${place}</p>`,
+        `<p><strong>${t("details.placeName")}:</strong> ${placeName}</p>`,
+        `<p><strong>${t("details.placeLink")}:</strong> ${placeLink}</p>`,
+        `<p><strong>${t("details.mapsLink")}:</strong> ${mapsLink}</p>`,
         `<p><strong>${t("details.caughtCount")}:</strong> ${selected.fishCount}</p>`,
         `<p><strong>${t("details.largest")}:</strong> ${toFixed(getLargestWeight(selected))} kg</p>`,
         `</div>`,
@@ -667,7 +845,7 @@ function initCatchDetails(user) {
     ].join("");
 }
 
-function initPlaces(user) {
+async function initPlaces(user) {
     if (!user) {
         return;
     }
@@ -680,7 +858,7 @@ function initPlaces(user) {
         return;
     }
 
-    const catches = getUserCatches(user.id);
+    const catches = await getUserCatches(user.id);
     if (catches.length === 0) {
         placesList.innerHTML = `<article class="list-item"><p>${t("places.noPlaces")}</p></article>`;
         catchesContainer.innerHTML = "";
@@ -747,7 +925,26 @@ function getCurrentUser() {
     }
 }
 
-function getUserCatches(userId) {
+async function getUserCatches(userId) {
+    if (firebaseState.enabled && firebaseState.db) {
+        try {
+            const snapshot = await firebaseState.db
+                .collection("catches")
+                .where("userId", "==", userId)
+                .get();
+
+            return snapshot.docs
+                .map((doc) => ({ ...doc.data() }))
+                .sort((a, b) => {
+                    const aDate = new Date(a.date || a.createdAt).getTime();
+                    const bDate = new Date(b.date || b.createdAt).getTime();
+                    return bDate - aDate;
+                });
+        } catch {
+            // Falls through to local data if cloud query fails.
+        }
+    }
+
     const catches = readStorage(STORAGE.catches, []);
     const sharedDemo = catches.filter((item) => item.userId === "demo-user");
     const own = catches.filter((item) => item.userId === userId);
@@ -757,6 +954,41 @@ function getUserCatches(userId) {
         const bDate = new Date(b.date || b.createdAt).getTime();
         return bDate - aDate;
     });
+}
+
+async function saveCatch(catchRecord) {
+    if (firebaseState.enabled && firebaseState.db) {
+        await firebaseState.db.collection("catches").doc(catchRecord.id).set(catchRecord);
+        return;
+    }
+
+    const catches = readStorage(STORAGE.catches, []);
+    catches.unshift(catchRecord);
+    writeStorage(STORAGE.catches, catches);
+}
+
+async function saveImages(files, userId, catchId) {
+    if (!files || files.length === 0) {
+        return [];
+    }
+
+    if (firebaseState.enabled && firebaseState.storage) {
+        try {
+            const uploads = files.map(async (file, index) => {
+                const safeName = String(file.name || `image-${index}`).replaceAll(/[^a-zA-Z0-9._-]/g, "_");
+                const path = `catches/${userId}/${catchId}/${Date.now()}-${index}-${safeName}`;
+                const ref = firebaseState.storage.ref().child(path);
+                await ref.put(file);
+                return ref.getDownloadURL();
+            });
+
+            return Promise.all(uploads);
+        } catch {
+            // Falls through to local base64 save.
+        }
+    }
+
+    return filesToBase64(files);
 }
 
 function addFishRow(container) {
@@ -824,7 +1056,7 @@ function filterCatches(catches, formData) {
 
     return catches.filter((item) => {
         const itemDate = item.date || "";
-        const itemPlaceText = `${item.placeName || ""} ${item.placeLink || ""}`.toLowerCase();
+        const itemPlaceText = `${item.placeName || ""} ${item.placeLink || ""} ${item.mapsLink || ""} ${getPrimaryPlaceLabel(item)}`.toLowerCase();
         const largest = getLargestWeight(item);
 
         if (dateFrom && itemDate < dateFrom) {
@@ -860,9 +1092,7 @@ function filterCatches(catches, formData) {
 }
 
 function renderCatchCard(item, compact) {
-    const place = item.placeType === "link"
-        ? item.placeLink
-        : item.placeName;
+    const place = getPrimaryPlaceLabel(item);
 
     const largest = getLargestWeight(item);
 
@@ -879,7 +1109,7 @@ function renderCatchCard(item, compact) {
 
 function groupByPlace(catches) {
     return catches.reduce((acc, item) => {
-        const key = (item.placeType === "link" ? item.placeLink : item.placeName) || t("common.unknownPlace");
+        const key = getPrimaryPlaceLabel(item);
         if (!acc[key]) {
             acc[key] = [];
         }
@@ -904,6 +1134,24 @@ function parseOptionalNumber(value) {
 
     const n = Number(value);
     return Number.isFinite(n) ? n : null;
+}
+
+function parseFirebaseError(error, fallback) {
+    const code = String(error?.code || "");
+    switch (code) {
+        case "auth/email-already-in-use":
+            return t("register.alreadyExists", { fallback: "This email is already registered." });
+        case "auth/invalid-email":
+            return t("login.invalid", { fallback: "Invalid email or password." });
+        case "auth/weak-password":
+            return t("register.weak", { fallback: "Password is too weak." });
+        case "auth/user-not-found":
+        case "auth/wrong-password":
+        case "auth/invalid-credential":
+            return t("login.invalid", { fallback: "Invalid email or password." });
+        default:
+            return fallback;
+    }
 }
 
 function readStorage(key, fallback) {
@@ -943,6 +1191,26 @@ function escapeHtml(value) {
 
 function escapeAttr(value) {
     return String(value).replaceAll('"', "&quot;");
+}
+
+function getPrimaryPlaceLabel(item) {
+    if (item.placeName && item.placeName.trim()) {
+        return item.placeName.trim();
+    }
+
+    if (item.mapsLink && item.mapsLink.trim()) {
+        return item.mapsLink.trim();
+    }
+
+    if (item.placeLink && item.placeLink.trim()) {
+        return item.placeLink.trim();
+    }
+
+    if (item.placeType === "link" && item.placeLink) {
+        return item.placeLink;
+    }
+
+    return t("common.unknownPlace");
 }
 
 function renderLanguageSwitch() {
@@ -1057,16 +1325,10 @@ function applyPageTranslations(page, user) {
             setText(".card h1", t("add.title"));
             setText(".card > p", t("add.subtitle"));
             setText('label[for="catchDate"]', t("add.date"));
-            setText(".inline-fieldset legend", t("add.placeInputType"));
-            const placeOptions = document.querySelectorAll(".inline-fieldset label");
-            if (placeOptions[0]) {
-                placeOptions[0].lastChild.textContent = ` ${t("add.placeNameOption")}`;
-            }
-            if (placeOptions[1]) {
-                placeOptions[1].lastChild.textContent = ` ${t("add.placeLinkOption")}`;
-            }
             setText('label[for="placeName"]', t("add.placeName"));
             setText('label[for="placeLink"]', t("add.placeLink"));
+            setText('label[for="mapsLink"]', t("add.mapsLink"));
+            setText(".field-hint", t("add.placeHint"));
             setText('label[for="fishCount"]', t("add.fishCount"));
             setText(".fish-block h2", t("add.fishDetails"));
             setText("#addFishRow", t("add.addFishRow"));
@@ -1075,6 +1337,7 @@ function applyPageTranslations(page, user) {
             setText('#catchForm button[type="submit"]', t("add.save"));
             setPlaceholder("#placeName", t("add.placeNamePh"));
             setPlaceholder("#placeLink", t("add.placeLinkPh"));
+            setPlaceholder("#mapsLink", t("add.mapsLinkPh"));
             setPlaceholder("#notes", t("add.notesPh"));
             break;
         }
