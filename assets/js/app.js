@@ -568,9 +568,9 @@ function initIndex(user) {
         ].join("");
     } else {
         actions.innerHTML = [
-            `<a class="btn btn-primary" href="login.html">${t("nav.login")}</a>`,
-            `<a class="btn btn-secondary" href="register.html">${t("nav.register")}</a>`,
-            `<button class="btn btn-outline-secondary" type="button" id="continueGuestBtn">${t("index.continueGuest")}</button>`
+            `<a class="btn btn-primary btn-lg" href="login.html">${t("nav.login")}</a>`,
+            `<a class="btn btn-dark btn-lg" href="register.html">${t("nav.register")}</a>`,
+            `<button class="btn btn-outline-success btn-lg fw-bold" type="button" id="continueGuestBtn">${t("index.continueGuest")}</button>`
         ].join("");
 
         const guestButton = document.getElementById("continueGuestBtn");
@@ -863,6 +863,7 @@ async function initLogbook(user) {
     const render = () => {
         const filtered = filterCatches(catches, new FormData(form));
         count.textContent = t("logbook.resultCount", { count: filtered.length });
+        count.classList.toggle("badge-empty", filtered.length === 0);
 
         if (filtered.length === 0) {
             container.innerHTML = `<article class="list-item"><p>${t("logbook.noMatch")}</p></article>`;

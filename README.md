@@ -1,85 +1,88 @@
 # Fishing Logbook
 
-A simple frontend Fishing Logbook web app where users can register/login, save fishing experiences, and browse logs by filters or places.
+A multi-page fishing logbook web app built with plain HTML, CSS, and JavaScript.
 
-## Overview
+## What It Does
 
-This project is a static HTML/CSS/JavaScript app using browser localStorage.
-No backend is required for basic usage.
+- Registration and login
+- Continue as Guest mode
+- Dashboard navigation
+- Add catch entries with multiple fish rows
+- Logbook filter and list view
+- Catch details page
+- Places grouping page
+- EN/HU language switch
+- Responsive topbar with hamburger menu
 
-Main goals:
+## Current Navigation Behavior
 
-- User authentication flow (register/login/logout)
-- Add full fishing experience records
-- Search and filter fishing logs
-- Browse logs by places
-- EN/HU language switch in the top navigation
+- The app uses a right-side hamburger menu.
+- The EN/HU switch is shown next to the hamburger button.
+- The menu opens as a right-aligned dropdown panel.
+- The dropdown width follows content length (not full-screen).
+- Menu items have hover and focus-visible feedback.
+- On desktop pointer devices, the menu closes when the cursor leaves the dropdown.
 
-## Features
+## Tech Stack
 
-- Register and login pages
-- Dashboard with quick navigation cards
-- Add new fishing experience:
-  - date
-  - place by name or link
-  - caught fish count
-  - fish type + weight rows
-  - image upload (stored as base64 in localStorage)
-  - notes
-- Logbook page with filters:
-  - date from/to
-  - place text
-  - min/max fish count
-  - min/max largest fish weight
-- Catch details page with full entry data
-- Places page with grouped place records
-- Persistent EN/HU language preference
+- HTML5
+- CSS3
+- Vanilla JavaScript
+- Optional Firebase (Auth, Firestore, Storage) with local fallback
 
-## Project Structure
+## Data Model and Storage
 
-- index.html: Landing page
-- login.html: Login page
-- register.html: Register page
-- dashboard.html: Main dashboard after login
-- add-catch.html: Add fishing experience form
-- my-cathches.html: Logbook list and filters
-- catch-details.html: Full details of one catch
-- places.html: Grouped places and logs
-- assets/css/style.css: Styles
-- assets/js/app.js: App logic (auth, storage, filters, i18n)
+Local keys used:
 
-## How To Use
+- `flb_users`
+- `flb_current_user`
+- `flb_catches`
+- `flb_language`
 
-1. Open index.html in a browser.
-2. Register a new user account.
-3. Login and open the dashboard.
-4. Add a new fishing experience from Add Experience.
-5. Open Logbook to filter and search results.
-6. Open Places to inspect logs grouped by location.
-7. Use EN/HU switch in the header to change language.
+Notes:
 
-## Data Storage
+- Guest data is isolated by guest user id.
+- If Firebase is available and working, auth/data/image operations can use Firebase.
+- If Firebase is unavailable, the app falls back to localStorage behavior.
 
-This app stores data in browser localStorage keys:
+## Pages
 
-- flb_users
-- flb_current_user
-- flb_catches
-- flb_seeded
-- flb_language
+- `index.html` - Landing page
+- `login.html` - Login page
+- `register.html` - Registration page
+- `dashboard.html` - User dashboard
+- `add-catch.html` - Add catch form
+- `my-cathches.html` - Logbook filters and result list
+- `catch-details.html` - Single catch details
+- `places.html` - Places aggregation and browsing
 
-Note: Clearing browser storage removes saved local data.
+## Add Catch Fields
 
-## Notes
+Typical catch entry includes:
 
-- This is a client-side prototype.
-- Passwords are stored locally in plain form (not secure for production).
-- For production use, add backend auth and database.
+- Date
+- Place name or link
+- Optional maps link
+- Fish count
+- One or more fish rows (type, weight, kg/lb)
+- Weather and water temperature
+- Optional notes
+- Optional image upload (gallery/camera)
 
-## Future Improvements
+## Run Locally
 
-- Backend integration (Supabase/Firebase/Node API)
-- Secure password handling and token auth
-- Cloud image storage
-- Better analytics per place and fish type
-- Export logs to CSV/PDF
+1. Open `index.html` in a browser.
+2. Register, login, or continue as guest.
+3. Use dashboard cards or the hamburger menu to navigate.
+
+## Security Note
+
+This is a client-side project/prototype.
+Do not use plain local password storage in production.
+
+## Suggested Next Steps
+
+- Add backend validation and secure auth flow
+- Add server-side image rules and quotas
+- Add export features (CSV/PDF)
+- Add automated tests for filtering and catch rendering
