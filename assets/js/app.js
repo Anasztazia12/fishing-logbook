@@ -45,12 +45,14 @@ const I18N = {
         "nav.home": "Home",
         "nav.login": "Login",
         "nav.register": "Register",
+        "nav.guest": "Guest",
         "nav.lang": "Language",
         "index.kicker": "Personal angling tracker",
         "index.title": "Track every catch, place and fishing memory",
         "index.text": "Register or login to add new fishing experiences, browse your logbook, and review catches by place with full details.",
         "index.openDashboard": "Open Dashboard",
         "index.addResult": "Add New Result",
+        "index.continueGuest": "Continue as Guest",
         "login.title": "Login",
         "login.subtitle": "Access your fishing dashboard.",
         "login.email": "Email",
@@ -150,117 +152,119 @@ const I18N = {
         "common.openDetails": "Open details"
     },
     hu: {
-        "nav.dashboard": "Kezdolap",
-        "nav.addExperience": "Uj elmeny",
-        "nav.logbook": "Horgasznaplo",
-        "nav.places": "Helyszinek",
-        "nav.logout": "Kijelentkezes",
-        "nav.home": "Fooldal",
-        "nav.login": "Belepes",
-        "nav.register": "Regisztracio",
+        "nav.dashboard": "Kezdőlap",
+        "nav.addExperience": "Új élmény",
+        "nav.logbook": "Horgásznapló",
+        "nav.places": "Helyszínek",
+        "nav.logout": "Kijelentkezés",
+        "nav.home": "Főoldal",
+        "nav.login": "Belépés",
+        "nav.register": "Regisztráció",
+        "nav.guest": "Vendég",
         "nav.lang": "Nyelv",
-        "index.kicker": "Szemelyes horgasz nyilvantarto",
-        "index.title": "Rogzits minden fogast, helyszint es horgasz emleket",
-        "index.text": "Regisztralj vagy lepjel be, hogy uj horgaszati elmenyeket adj hozza, szurd a naplodat, es nezd at a helyszinek adatait teljes reszletekkel.",
-        "index.openDashboard": "Kezdolap megnyitasa",
-        "index.addResult": "Uj eredmeny rogzitese",
-        "login.title": "Belepes",
-        "login.subtitle": "Lepj be a horgasz iranyitopultodra.",
+        "index.kicker": "Személyes horgász nyilvántartó",
+        "index.title": "Rögzíts minden fogást, helyszínt és horgász emléket",
+        "index.text": "Regisztrálj vagy lépj be, hogy új horgászati élményeket adj hozzá, szűrd a naplódat, és nézd át a helyszínek adatait teljes részletekkel.",
+        "index.openDashboard": "Kezdőlap megnyitása",
+        "index.addResult": "Új eredmény rögzítése",
+        "index.continueGuest": "Folytatás vendégként",
+        "login.title": "Belépés",
+        "login.subtitle": "Lépj be a horgász irányítópultodra.",
         "login.email": "Email",
-        "login.password": "Jelszo",
-        "login.button": "Belepes",
-        "login.noAccount": "Nincs fiokod?",
-        "login.registerHere": "Regisztralj itt",
-        "register.title": "Regisztracio",
-        "register.subtitle": "Hozd letre a sajat horgasznaplo fiokodat.",
-        "register.username": "Felhasznalonev",
+        "login.password": "Jelszó",
+        "login.button": "Belépés",
+        "login.noAccount": "Nincs fiókod?",
+        "login.registerHere": "Regisztrálj itt",
+        "register.title": "Regisztráció",
+        "register.subtitle": "Hozd létre a saját horgásznapló fiókodat.",
+        "register.username": "Felhasználónév",
         "register.email": "Email",
-        "register.password": "Jelszo",
-        "register.button": "Fiok letrehozasa",
-        "register.already": "Mar regisztraltal?",
-        "register.login": "Belepes",
-        "dashboard.welcome": "Udvozollek, {name}",
-        "dashboard.choose": "Valaszd ki, mit szeretnel kezelni a horgasznaplodban.",
-        "dashboard.card.addTitle": "Uj horgaszati elmeny",
-        "dashboard.card.addText": "Rogzitsd a helyszint, hal adatokat, fotokat es jegyzetet.",
-        "dashboard.card.logbookTitle": "Horgasznaplo",
-        "dashboard.card.logbookText": "Keress es szurj datum, helyszin es suly szerint.",
-        "dashboard.card.placesTitle": "Helyszinek",
-        "dashboard.card.placesText": "Nezd at az osszes helyszint, es nyisd meg a teljes naplokat.",
+        "register.password": "Jelszó",
+        "register.button": "Fiók létrehozása",
+        "register.already": "Már regisztráltál?",
+        "register.login": "Belépés",
+        "dashboard.welcome": "Üdvözöllek, {name}",
+        "dashboard.choose": "Válaszd ki, mit szeretnél kezelni a horgásznaplódban.",
+        "dashboard.card.addTitle": "Új horgászati élmény",
+        "dashboard.card.addText": "Rögzítsd a helyszínt, hal adatokat, fotókat és jegyzetet.",
+        "dashboard.card.logbookTitle": "Horgásznapló",
+        "dashboard.card.logbookText": "Keress és szűrj dátum, helyszín és súly szerint.",
+        "dashboard.card.placesTitle": "Helyszínek",
+        "dashboard.card.placesText": "Nézd át az összes helyszínt, és nyisd meg a teljes naplókat.",
         "dashboard.card.caughtTitle": "Kifogott halak",
-        "dashboard.card.caughtText": "Bongeszd a halfajokat, darabszamokat es max sulyt.",
-        "dashboard.recent": "Legutobbi fogasok",
-        "dashboard.openFull": "Teljes naplo megnyitasa",
-        "dashboard.noCatches": "Meg nincs fogas. Kezdd egy uj horgaszati eredmeny rogzitesével.",
-        "add.title": "Uj horgaszati elmeny rogzitese",
-        "add.subtitle": "Mentsd el a teljes eredmenyt: helyszin, halszam, hal adatok, fotok es jegyzet.",
-        "add.date": "Datum",
-        "add.placeName": "Helyszin neve",
-        "add.placeNamePh": "Pelda: Edinburgh, Union Canal",
-        "add.placeLink": "Helyszin link",
+        "dashboard.card.caughtText": "Böngészd a halfajokat, darabszámokat és max súlyt.",
+        "dashboard.recent": "Legutóbbi fogások",
+        "dashboard.openFull": "Teljes napló megnyitása",
+        "dashboard.noCatches": "Még nincs fogás. Kezdd egy új horgászati eredmény rögzítésével.",
+        "add.title": "Új horgászati élmény rögzítése",
+        "add.subtitle": "Mentsd el a teljes eredményt: helyszín, halszám, hal adatok, fotók és jegyzet.",
+        "add.date": "Dátum",
+        "add.placeName": "Helyszín neve",
+        "add.placeNamePh": "Példa: Edinburgh, Union Canal",
+        "add.placeLink": "Helyszín link",
         "add.placeLinkPh": "https://pelda.hu/horgasz-helyszin",
         "add.mapsLink": "Google Maps link",
         "add.mapsLinkPh": "https://maps.google.com/...",
-        "add.placeHint": "Megadhatsz helyszin nevet, linket, Google Maps linket, vagy ezeket egyutt is.",
-        "add.fishCount": "Kifogott halak szama",
-        "add.fishDetails": "Hal adatok (tipus + suly)",
-        "add.addFishRow": "Hal sor hozzaadasa",
-        "add.uploadPhotos": "Fotok feltoltese",
+        "add.placeHint": "Megadhatsz helyszín nevet, linket, Google Maps linket, vagy ezeket együtt is.",
+        "add.fishCount": "Kifogott halak száma",
+        "add.fishDetails": "Hal adatok (típus + súly)",
+        "add.addFishRow": "Hal sor hozzáadása",
+        "add.uploadPhotos": "Fotók feltöltése",
         "add.notes": "Jegyzet",
-        "add.notesPh": "Mi tortent ezen a horgaszaton?",
-        "add.save": "Horgaszati eredmeny mentese",
-        "add.provideAnyPlace": "Adj meg legalabb egy helyszin adatot (nev, helyszin link vagy Google Maps link).",
-        "add.addFishDetail": "Adj hozza legalabb egy hal sort.",
-        "add.saved": "A horgaszati eredmeny sikeresen elmentve.",
-        "add.fishType": "Hal tipusa",
-        "add.weight": "Suly (kg)",
-        "add.remove": "Torles",
-        "logbook.title": "Horgasznaplo",
-        "logbook.subtitle": "Szures datum, helyszin, kifogott halak szama es hal suly alapjan.",
-        "logbook.dateFrom": "Datum tol",
-        "logbook.dateTo": "Datum ig",
-        "logbook.place": "Helyszin",
-        "logbook.placePh": "Pelda: Edinburgh",
-        "logbook.fishMin": "Minimum halszam",
-        "logbook.fishMax": "Maximum halszam",
-        "logbook.weightMin": "Minimum hal suly (kg)",
-        "logbook.weightMax": "Maximum hal suly (kg)",
-        "logbook.apply": "Szurok alkalmazasa",
-        "logbook.clear": "Szurok torlese",
-        "logbook.results": "Talalatok",
-        "logbook.resultCount": "{count} talalat",
-        "logbook.noMatch": "Nincs olyan fogas, ami megfelel a szuroknek.",
-        "details.title": "Fogas reszletek",
-        "details.back": "Vissza a naplohoz",
-        "details.missingId": "Hianyzo fogas azonosito.",
-        "details.notFound": "A fogas nem talalhato.",
-        "details.date": "Datum",
-        "details.place": "Helyszin",
-        "details.placeName": "Helyszin neve",
-        "details.placeLink": "Helyszin link",
+        "add.notesPh": "Mi történt ezen a horgászaton?",
+        "add.save": "Horgászati eredmény mentése",
+        "add.provideAnyPlace": "Adj meg legalább egy helyszín adatot (név, helyszín link vagy Google Maps link).",
+        "add.addFishDetail": "Adj hozzá legalább egy hal sort.",
+        "add.saved": "A horgászati eredmény sikeresen elmentve.",
+        "add.fishType": "Hal típusa",
+        "add.weight": "Súly (kg)",
+        "add.remove": "Törlés",
+        "logbook.title": "Horgásznapló",
+        "logbook.subtitle": "Szűrés dátum, helyszín, kifogott halak száma és hal súly alapján.",
+        "logbook.dateFrom": "Dátumtól",
+        "logbook.dateTo": "Dátumig",
+        "logbook.place": "Helyszín",
+        "logbook.placePh": "Példa: Edinburgh",
+        "logbook.fishMin": "Minimum halszám",
+        "logbook.fishMax": "Maximum halszám",
+        "logbook.weightMin": "Minimum hal súly (kg)",
+        "logbook.weightMax": "Maximum hal súly (kg)",
+        "logbook.apply": "Szűrők alkalmazása",
+        "logbook.clear": "Szűrők törlése",
+        "logbook.results": "Találatok",
+        "logbook.resultCount": "{count} találat",
+        "logbook.noMatch": "Nincs olyan fogás, ami megfelel a szűrőknek.",
+        "details.title": "Fogás részletek",
+        "details.back": "Vissza a naplóhoz",
+        "details.missingId": "Hiányzó fogás azonosító.",
+        "details.notFound": "A fogás nem található.",
+        "details.date": "Dátum",
+        "details.place": "Helyszín",
+        "details.placeName": "Helyszín neve",
+        "details.placeLink": "Helyszín link",
         "details.mapsLink": "Google Maps",
-        "details.openMap": "Terkep megnyitasa",
-        "details.caughtCount": "Kifogott halak szama",
+        "details.openMap": "Térkép megnyitása",
+        "details.caughtCount": "Kifogott halak száma",
         "details.largest": "Legnagyobb hal",
         "details.fishList": "Halfaj lista",
-        "details.photos": "Fotok",
+        "details.photos": "Fotók",
         "details.notes": "Jegyzet",
-        "details.noPhotos": "Nincsenek feltoltott fotok.",
-        "details.noNotes": "Nincs megjegyzes.",
-        "details.type": "Tipus",
-        "details.weight": "Suly",
-        "places.title": "Horgasz helyszinek",
-        "places.subtitle": "Kattints egy helyszinre, es nezd meg az ottani teljes naplobejegyzeseket.",
-        "places.select": "Valassz helyszint",
-        "places.noPlaces": "Meg nincs helyszin. Rogzits elobb egy horgaszati elmenyt.",
-        "places.logsFor": "Naplok itt: {place}",
-        "places.noLogs": "Ehhez a helyszinhez nincs naplo.",
-        "places.logCount": "{count} naplo | Legnagyobb hal {weight} kg",
-        "common.unknownPlace": "Ismeretlen helyszin",
-        "common.date": "Datum",
+        "details.noPhotos": "Nincsenek feltöltött fotók.",
+        "details.noNotes": "Nincs megjegyzés.",
+        "details.type": "Típus",
+        "details.weight": "Súly",
+        "places.title": "Horgász helyszínek",
+        "places.subtitle": "Kattints egy helyszínre, és nézd meg az ottani teljes naplóbejegyzéseket.",
+        "places.select": "Válassz helyszínt",
+        "places.noPlaces": "Még nincs helyszín. Rögzíts előbb egy horgászati élményt.",
+        "places.logsFor": "Naplók itt: {place}",
+        "places.noLogs": "Ehhez a helyszínhez nincs napló.",
+        "places.logCount": "{count} napló | Legnagyobb hal {weight} kg",
+        "common.unknownPlace": "Ismeretlen helyszín",
+        "common.date": "Dátum",
         "common.caughtFish": "Kifogott halak",
         "common.largestFish": "Legnagyobb hal",
-        "common.openDetails": "Reszletek"
+        "common.openDetails": "Részletek"
     }
 };
 
@@ -382,10 +386,14 @@ async function syncAuthState() {
         return;
     }
 
+    const storedUser = getCurrentUser();
+
     await new Promise((resolve) => {
         const unsubscribe = firebaseState.auth.onAuthStateChanged((authUser) => {
             if (!authUser) {
-                localStorage.removeItem(STORAGE.currentUser);
+                if (!storedUser || !storedUser.isGuest) {
+                    localStorage.removeItem(STORAGE.currentUser);
+                }
             } else {
                 localStorage.setItem(STORAGE.currentUser, JSON.stringify({
                     id: authUser.uid,
@@ -446,8 +454,9 @@ function renderNav(user) {
     }
 
     if (user) {
+        const guestLabel = user.isGuest ? ` (${t("nav.guest")})` : "";
         nav.innerHTML = [
-            `<a href="dashboard.html">${t("nav.dashboard")}</a>`,
+            `<a href="dashboard.html">${t("nav.dashboard")}${guestLabel}</a>`,
             `<a href="add-catch.html">${t("nav.addExperience")}</a>`,
             `<a href="my-cathches.html">${t("nav.logbook")}</a>`,
             `<a href="places.html">${t("nav.places")}</a>`,
@@ -498,9 +507,27 @@ function initIndex(user) {
     } else {
         actions.innerHTML = [
             `<a class="btn btn-primary" href="login.html">${t("nav.login")}</a>`,
-            `<a class="btn btn-secondary" href="register.html">${t("nav.register")}</a>`
+            `<a class="btn btn-secondary" href="register.html">${t("nav.register")}</a>`,
+            `<button class="btn btn-ghost" type="button" id="continueGuestBtn">${t("index.continueGuest")}</button>`
         ].join("");
+
+        const guestButton = document.getElementById("continueGuestBtn");
+        if (guestButton) {
+            guestButton.addEventListener("click", () => {
+                startGuestSession();
+                window.location.href = "dashboard.html";
+            });
+        }
     }
+}
+
+function startGuestSession() {
+    localStorage.setItem(STORAGE.currentUser, JSON.stringify({
+        id: `guest-${crypto.randomUUID()}`,
+        username: t("nav.guest"),
+        email: "",
+        isGuest: true
+    }));
 }
 
 async function initRegister() {
@@ -926,6 +953,21 @@ function getCurrentUser() {
 }
 
 async function getUserCatches(userId) {
+    const user = getCurrentUser();
+    const isGuest = Boolean(user?.isGuest);
+
+    if (isGuest) {
+        const catchesLocal = readStorage(STORAGE.catches, []);
+        const ownGuest = catchesLocal.filter((item) => item.userId === userId);
+        const sharedDemo = catchesLocal.filter((item) => item.userId === "demo-user");
+
+        return [...ownGuest, ...sharedDemo].sort((a, b) => {
+            const aDate = new Date(a.date || a.createdAt).getTime();
+            const bDate = new Date(b.date || b.createdAt).getTime();
+            return bDate - aDate;
+        });
+    }
+
     if (firebaseState.enabled && firebaseState.db) {
         try {
             const snapshot = await firebaseState.db
@@ -957,7 +999,10 @@ async function getUserCatches(userId) {
 }
 
 async function saveCatch(catchRecord) {
-    if (firebaseState.enabled && firebaseState.db) {
+    const user = getCurrentUser();
+    const isGuest = Boolean(user?.isGuest);
+
+    if (!isGuest && firebaseState.enabled && firebaseState.db) {
         await firebaseState.db.collection("catches").doc(catchRecord.id).set(catchRecord);
         return;
     }
@@ -972,7 +1017,10 @@ async function saveImages(files, userId, catchId) {
         return [];
     }
 
-    if (firebaseState.enabled && firebaseState.storage) {
+    const user = getCurrentUser();
+    const isGuest = Boolean(user?.isGuest);
+
+    if (!isGuest && firebaseState.enabled && firebaseState.storage) {
         try {
             const uploads = files.map(async (file, index) => {
                 const safeName = String(file.name || `image-${index}`).replaceAll(/[^a-zA-Z0-9._-]/g, "_");

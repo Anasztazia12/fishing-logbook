@@ -4,10 +4,11 @@
 	--line: #b9ced9;
 	--text: #0f2b36;
 	--muted: #3f6672;
-	--primary: #0077a3;
-	--primary-dark: #005b7c;
-	--accent: #ff9f1c;
-	--accent-soft: #ffd79a;
+	--primary: #0089bf;
+	--primary-dark: #006b96;
+	--accent: #ff8a00;
+	--accent-soft: #ffe0b8;
+	--vivid: #00b4d8;
 	--danger: #a5342f;
 	--radius: 16px;
 	--shadow: 0 16px 38px rgba(13, 48, 63, 0.14);
@@ -21,10 +22,11 @@ body {
 	margin: 0;
 	color: var(--text);
 	background:
-		radial-gradient(circle at 10% 8%, #d9eef6 0, transparent 30%),
-		radial-gradient(circle at 88% 16%, #fff1cf 0, transparent 28%),
+		radial-gradient(circle at 10% 8%, #cceeff 0, transparent 30%),
+		radial-gradient(circle at 88% 16%, #ffe5b8 0, transparent 28%),
+		radial-gradient(circle at 52% 100%, #d1f4ff 0, transparent 36%),
 		repeating-linear-gradient(145deg, rgba(13, 79, 102, 0.03) 0 10px, rgba(255, 255, 255, 0.03) 10px 20px),
-		linear-gradient(180deg, #e6f1f4, #edf6f8 40%, #f7f2e7);
+		linear-gradient(180deg, #ddf0f7, #ebf7fb 40%, #fff6e7);
 	font-family: "Trebuchet MS", "Segoe UI", sans-serif;
 	font-size: clamp(15px, 1.55vw, 17px);
 	line-height: 1.45;
@@ -116,7 +118,7 @@ body {
 }
 
 .hero {
-	background: linear-gradient(116deg, #fff6dd 0%, #d9f0f7 46%, #d4e8ff 100%);
+	background: linear-gradient(116deg, #fff2cf 0%, #cdf1fb 44%, #cce4ff 100%);
 	border: 1px solid var(--line);
 	border-radius: 20px;
 	padding: clamp(1.4rem, 3.6vw, 2.8rem);
@@ -266,12 +268,12 @@ select:focus {
 }
 
 .btn-primary {
-	background: linear-gradient(120deg, var(--primary), #1e99b8);
+	background: linear-gradient(120deg, var(--primary), var(--vivid));
 	color: #fff;
 }
 
 .btn-primary:hover {
-	background: linear-gradient(120deg, var(--primary-dark), #167f9c);
+	background: linear-gradient(120deg, var(--primary-dark), #00a2cc);
 }
 
 .btn-secondary {
@@ -286,6 +288,17 @@ select:focus {
 .btn-danger {
 	background: color-mix(in srgb, var(--danger) 14%, #fff);
 	color: var(--danger);
+}
+
+.btn-ghost {
+	background: rgba(255, 255, 255, 0.4);
+	border: 1px solid rgba(0, 137, 191, 0.35);
+	color: #0b5a72;
+}
+
+.btn-ghost:hover {
+	background: rgba(255, 255, 255, 0.8);
+	border-color: rgba(0, 137, 191, 0.6);
 }
 
 .card-head {
