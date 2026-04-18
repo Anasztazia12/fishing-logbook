@@ -2,7 +2,6 @@ const STORAGE = {
     users: "flb_users",
     currentUser: "flb_current_user",
     catches: "flb_catches",
-    seeded: "flb_seeded",
     language: "flb_language"
 };
 
@@ -47,6 +46,7 @@ const I18N = {
         "nav.register": "Register",
         "nav.guest": "Guest",
         "nav.lang": "Language",
+        "nav.weight": "Weight",
         "index.kicker": "Personal angling tracker",
         "index.title": "Track every catch, place and fishing memory",
         "index.text": "Register or login to add new fishing experiences, browse your logbook, and review catches by place with full details.",
@@ -85,16 +85,20 @@ const I18N = {
         "add.subtitle": "Save your full result: place, fish count, fish data, photos and notes.",
         "add.date": "Date",
         "add.placeName": "Place name",
-        "add.placeNamePh": "Example: Edinburgh, Union Canal",
+        "add.placeNamePh": "Example: Lake Balaton, North Shore",
         "add.placeLink": "Place link",
         "add.placeLinkPh": "https://example.com/fishing-spot",
         "add.mapsLink": "Google Maps link",
         "add.mapsLinkPh": "https://maps.google.com/...",
         "add.placeHint": "You can type a place name, add a link, add a Google Maps link, or use all of them together.",
         "add.fishCount": "Caught fish count",
+        "add.waterTemp": "Water temperature",
+        "add.weather": "Weather",
+        "add.weatherPh": "Sunny, cloudy, windy...",
         "add.fishDetails": "Fish details (type + weight)",
         "add.addFishRow": "Add fish row",
         "add.uploadPhotos": "Upload photos",
+        "add.uploadCamera": "Take photo with phone camera",
         "add.notes": "Notes",
         "add.notesPh": "What happened on this fishing trip?",
         "add.save": "Save fishing result",
@@ -102,18 +106,18 @@ const I18N = {
         "add.addFishDetail": "Add at least one fish detail row.",
         "add.saved": "Fishing result saved successfully.",
         "add.fishType": "Fish type",
-        "add.weight": "Weight (kg)",
+        "add.weight": "Weight",
         "add.remove": "Remove",
         "logbook.title": "Fishing logbook",
         "logbook.subtitle": "Filter by date, place, caught fish count and fish weight.",
         "logbook.dateFrom": "Date from",
         "logbook.dateTo": "Date to",
         "logbook.place": "Place",
-        "logbook.placePh": "Example: Edinburgh",
+        "logbook.placePh": "Example: Lake Balaton",
         "logbook.fishMin": "Min fish count",
         "logbook.fishMax": "Max fish count",
-        "logbook.weightMin": "Min fish weight (kg)",
-        "logbook.weightMax": "Max fish weight (kg)",
+        "logbook.weightMin": "Min fish weight",
+        "logbook.weightMax": "Max fish weight",
         "logbook.apply": "Apply filters",
         "logbook.clear": "Clear",
         "logbook.results": "Results",
@@ -130,6 +134,8 @@ const I18N = {
         "details.mapsLink": "Google Maps",
         "details.openMap": "Open map",
         "details.caughtCount": "Caught fish count",
+        "details.waterTemp": "Water temperature",
+        "details.weather": "Weather",
         "details.largest": "Largest fish",
         "details.fishList": "Fish list",
         "details.photos": "Photos",
@@ -144,12 +150,14 @@ const I18N = {
         "places.noPlaces": "No places yet. Add a fishing experience first.",
         "places.logsFor": "Logs for {place}",
         "places.noLogs": "No logs for this place.",
-        "places.logCount": "{count} log(s) | Largest fish {weight} kg",
+        "places.logCount": "{count} log(s) | Largest fish {weight}",
         "common.unknownPlace": "Unknown place",
         "common.date": "Date",
         "common.caughtFish": "Caught fish",
         "common.largestFish": "Largest fish",
-        "common.openDetails": "Open details"
+        "common.openDetails": "Open details",
+        "unit.kg": "kg",
+        "unit.lb": "lb"
     },
     hu: {
         "nav.dashboard": "Kezdőlap",
@@ -162,6 +170,7 @@ const I18N = {
         "nav.register": "Regisztráció",
         "nav.guest": "Vendég",
         "nav.lang": "Nyelv",
+        "nav.weight": "Súly",
         "index.kicker": "Személyes horgász nyilvántartó",
         "index.title": "Rögzíts minden fogást, helyszínt és horgász emléket",
         "index.text": "Regisztrálj vagy lépj be, hogy új horgászati élményeket adj hozzá, szűrd a naplódat, és nézd át a helyszínek adatait teljes részletekkel.",
@@ -200,16 +209,20 @@ const I18N = {
         "add.subtitle": "Mentsd el a teljes eredményt: helyszín, halszám, hal adatok, fotók és jegyzet.",
         "add.date": "Dátum",
         "add.placeName": "Helyszín neve",
-        "add.placeNamePh": "Példa: Edinburgh, Union Canal",
+        "add.placeNamePh": "Példa: Balaton, északi part",
         "add.placeLink": "Helyszín link",
         "add.placeLinkPh": "https://pelda.hu/horgasz-helyszin",
         "add.mapsLink": "Google Maps link",
         "add.mapsLinkPh": "https://maps.google.com/...",
         "add.placeHint": "Megadhatsz helyszín nevet, linket, Google Maps linket, vagy ezeket együtt is.",
         "add.fishCount": "Kifogott halak száma",
+        "add.waterTemp": "Víz hőmérséklet",
+        "add.weather": "Időjárás",
+        "add.weatherPh": "Napos, felhős, szeles...",
         "add.fishDetails": "Hal adatok (típus + súly)",
         "add.addFishRow": "Hal sor hozzáadása",
         "add.uploadPhotos": "Fotók feltöltése",
+        "add.uploadCamera": "Fotó készítése telefon kamerával",
         "add.notes": "Jegyzet",
         "add.notesPh": "Mi történt ezen a horgászaton?",
         "add.save": "Horgászati eredmény mentése",
@@ -217,18 +230,18 @@ const I18N = {
         "add.addFishDetail": "Adj hozzá legalább egy hal sort.",
         "add.saved": "A horgászati eredmény sikeresen elmentve.",
         "add.fishType": "Hal típusa",
-        "add.weight": "Súly (kg)",
+        "add.weight": "Súly",
         "add.remove": "Törlés",
         "logbook.title": "Horgásznapló",
         "logbook.subtitle": "Szűrés dátum, helyszín, kifogott halak száma és hal súly alapján.",
         "logbook.dateFrom": "Dátumtól",
         "logbook.dateTo": "Dátumig",
         "logbook.place": "Helyszín",
-        "logbook.placePh": "Példa: Edinburgh",
+        "logbook.placePh": "Példa: Balaton",
         "logbook.fishMin": "Minimum halszám",
         "logbook.fishMax": "Maximum halszám",
-        "logbook.weightMin": "Minimum hal súly (kg)",
-        "logbook.weightMax": "Maximum hal súly (kg)",
+        "logbook.weightMin": "Minimum hal súly",
+        "logbook.weightMax": "Maximum hal súly",
         "logbook.apply": "Szűrők alkalmazása",
         "logbook.clear": "Szűrők törlése",
         "logbook.results": "Találatok",
@@ -245,6 +258,8 @@ const I18N = {
         "details.mapsLink": "Google Maps",
         "details.openMap": "Térkép megnyitása",
         "details.caughtCount": "Kifogott halak száma",
+        "details.waterTemp": "Víz hőmérséklet",
+        "details.weather": "Időjárás",
         "details.largest": "Legnagyobb hal",
         "details.fishList": "Halfaj lista",
         "details.photos": "Fotók",
@@ -259,16 +274,19 @@ const I18N = {
         "places.noPlaces": "Még nincs helyszín. Rögzíts előbb egy horgászati élményt.",
         "places.logsFor": "Naplók itt: {place}",
         "places.noLogs": "Ehhez a helyszínhez nincs napló.",
-        "places.logCount": "{count} napló | Legnagyobb hal {weight} kg",
+        "places.logCount": "{count} napló | Legnagyobb hal {weight}",
         "common.unknownPlace": "Ismeretlen helyszín",
         "common.date": "Dátum",
         "common.caughtFish": "Kifogott halak",
         "common.largestFish": "Legnagyobb hal",
-        "common.openDetails": "Részletek"
+        "common.openDetails": "Részletek",
+        "unit.kg": "kg",
+        "unit.lb": "lb"
     }
 };
 
 let currentLanguage = getLanguage();
+let currentWeightUnit = "kg";
 
 document.addEventListener("DOMContentLoaded", () => {
     void bootstrapApp();
@@ -278,10 +296,6 @@ async function bootstrapApp() {
     await loadFirebaseSdk();
     initFirebase();
     await syncAuthState();
-
-    if (!firebaseState.enabled) {
-        seedDemoData();
-    }
 
     const page = document.body.dataset.page;
     const user = getCurrentUser();
@@ -406,35 +420,6 @@ async function syncAuthState() {
             resolve();
         });
     });
-}
-
-function seedDemoData() {
-    if (localStorage.getItem(STORAGE.seeded)) {
-        return;
-    }
-
-    const catches = readStorage(STORAGE.catches, []);
-    const demoRecord = {
-        id: crypto.randomUUID(),
-        userId: "demo-user",
-        date: "2026-03-24",
-        placeName: "Edinburgh - Union Canal",
-        placeLink: "",
-        mapsLink: "",
-        fishCount: 3,
-        fishItems: [
-            { type: "Pike", weight: 4.2 },
-            { type: "Perch", weight: 1.3 },
-            { type: "Trout", weight: 2.1 }
-        ],
-        imageData: [],
-        notes: "Windy afternoon, near old bridge.",
-        createdAt: new Date().toISOString()
-    };
-
-    catches.push(demoRecord);
-    writeStorage(STORAGE.catches, catches);
-    localStorage.setItem(STORAGE.seeded, "true");
 }
 
 function protectPage(page, user) {
@@ -687,13 +672,15 @@ async function initAddCatch(user) {
     const msg = document.getElementById("catchMessage");
     const dateInput = document.getElementById("catchDate");
     const imageInput = document.getElementById("catchImages");
+    const cameraInput = document.getElementById("catchCamera");
     const imagePreview = document.getElementById("imagePreview");
 
-    if (!form || !fishRows || !addFishRowBtn || !msg || !dateInput || !imageInput || !imagePreview) {
+    if (!form || !fishRows || !addFishRowBtn || !msg || !dateInput || !imageInput || !cameraInput || !imagePreview) {
         return;
     }
 
     dateInput.value = new Date().toISOString().slice(0, 10);
+    addFishRow(fishRows);
     addFishRow(fishRows);
 
     addFishRowBtn.addEventListener("click", () => addFishRow(fishRows));
@@ -712,9 +699,12 @@ async function initAddCatch(user) {
         }
     });
 
-    imageInput.addEventListener("change", () => {
-        renderImagePreviews(imageInput.files, imagePreview);
-    });
+    const updatePreview = () => {
+        renderImagePreviews(collectSelectedFiles(imageInput, cameraInput), imagePreview);
+    };
+
+    imageInput.addEventListener("change", updatePreview);
+    cameraInput.addEventListener("change", updatePreview);
 
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
@@ -736,8 +726,11 @@ async function initAddCatch(user) {
         }
 
         const catchId = crypto.randomUUID();
-        const imageData = await saveImages(Array.from(imageInput.files || []), user.id, catchId);
+        const selectedFiles = collectSelectedFiles(imageInput, cameraInput);
+        const imageData = await saveImages(selectedFiles, user.id, catchId);
         const fishCount = Number(data.get("fishCount") || 0);
+        const waterTemp = parseOptionalNumber(data.get("waterTemp"));
+        const weather = String(data.get("weather") || "").trim();
 
         const newCatch = {
             id: catchId,
@@ -747,6 +740,8 @@ async function initAddCatch(user) {
             placeLink,
             mapsLink,
             fishCount,
+            waterTemp,
+            weather,
             fishItems,
             imageData,
             notes: String(data.get("notes") || "").trim(),
@@ -759,6 +754,7 @@ async function initAddCatch(user) {
         form.reset();
         dateInput.value = new Date().toISOString().slice(0, 10);
         fishRows.innerHTML = "";
+        addFishRow(fishRows);
         addFishRow(fishRows);
         imagePreview.innerHTML = "";
     });
@@ -847,7 +843,7 @@ async function initCatchDetails(user) {
         : "-";
 
     const fishRows = selected.fishItems
-        .map((fish) => `<tr><td>${escapeHtml(fish.type)}</td><td>${toFixed(fish.weight)} kg</td></tr>`)
+        .map((fish) => `<tr><td>${escapeHtml(fish.type)}</td><td>${formatWeight(fish.weight)}</td></tr>`)
         .join("");
 
     const images = selected.imageData.length
@@ -861,7 +857,9 @@ async function initCatchDetails(user) {
         `<p><strong>${t("details.placeLink")}:</strong> ${placeLink}</p>`,
         `<p><strong>${t("details.mapsLink")}:</strong> ${mapsLink}</p>`,
         `<p><strong>${t("details.caughtCount")}:</strong> ${selected.fishCount}</p>`,
-        `<p><strong>${t("details.largest")}:</strong> ${toFixed(getLargestWeight(selected))} kg</p>`,
+        `<p><strong>${t("details.waterTemp")}:</strong> ${selected.waterTemp === null || selected.waterTemp === undefined ? "-" : `${toFixed(selected.waterTemp)} ${String.fromCharCode(176)}C`}</p>`,
+        `<p><strong>${t("details.weather")}:</strong> ${escapeHtml(selected.weather || "-")}</p>`,
+        `<p><strong>${t("details.largest")}:</strong> ${formatWeight(getLargestWeight(selected))}</p>`,
         `</div>`,
         `<h2>${t("details.fishList")}</h2>`,
         `<table class="fish-table"><thead><tr><th>${t("details.type")}</th><th>${t("details.weight")}</th></tr></thead><tbody>${fishRows}</tbody></table>`,
@@ -900,7 +898,7 @@ async function initPlaces(user) {
         return [
             `<button type="button" class="list-item place-btn" data-place="${escapeAttr(key)}" ${index === 0 ? "data-default=\"1\"" : ""}>`,
             `<h3>${escapeHtml(key)}</h3>`,
-            `<p>${t("places.logCount", { count: list.length, weight: toFixed(largest) })}</p>`,
+            `<p>${t("places.logCount", { count: list.length, weight: formatWeight(largest) })}</p>`,
             `</button>`
         ].join("");
     }).join("");
@@ -959,9 +957,8 @@ async function getUserCatches(userId) {
     if (isGuest) {
         const catchesLocal = readStorage(STORAGE.catches, []);
         const ownGuest = catchesLocal.filter((item) => item.userId === userId);
-        const sharedDemo = catchesLocal.filter((item) => item.userId === "demo-user");
 
-        return [...ownGuest, ...sharedDemo].sort((a, b) => {
+        return ownGuest.sort((a, b) => {
             const aDate = new Date(a.date || a.createdAt).getTime();
             const bDate = new Date(b.date || b.createdAt).getTime();
             return bDate - aDate;
@@ -988,10 +985,9 @@ async function getUserCatches(userId) {
     }
 
     const catches = readStorage(STORAGE.catches, []);
-    const sharedDemo = catches.filter((item) => item.userId === "demo-user");
     const own = catches.filter((item) => item.userId === userId);
 
-    return [...own, ...sharedDemo].sort((a, b) => {
+    return own.sort((a, b) => {
         const aDate = new Date(a.date || a.createdAt).getTime();
         const bDate = new Date(b.date || b.createdAt).getTime();
         return bDate - aDate;
@@ -1044,7 +1040,7 @@ function addFishRow(container) {
     row.className = "fish-row";
     row.innerHTML = [
         `<label>${t("add.fishType")} <input type="text" name="fishType" required></label>`,
-        `<label>${t("add.weight")} <input type="number" name="fishWeight" min="0" step="0.01" required></label>`,
+        `<label>${t("add.weight")}<div class="weight-inline"><input type="number" name="fishWeight" min="0" step="0.01" required><select name="fishWeightUnit"><option value="kg">kg</option><option value="lb">lb</option></select></div></label>`,
         `<button type="button" class="btn btn-danger remove-row">${t("add.remove")}</button>`
     ].join("");
 
@@ -1056,10 +1052,12 @@ function collectFishRows(container) {
     return rows.map((row) => {
         const typeInput = row.querySelector('input[name="fishType"]');
         const weightInput = row.querySelector('input[name="fishWeight"]');
+        const unitInput = row.querySelector('select[name="fishWeightUnit"]');
+        const selectedUnit = String(unitInput?.value || "kg").toLowerCase();
 
         return {
             type: String(typeInput?.value || "").trim(),
-            weight: Number(weightInput?.value || 0)
+            weight: convertWeightToKg(Number(weightInput?.value || 0), selectedUnit)
         };
     }).filter((fish) => fish.type && fish.weight >= 0);
 }
@@ -1084,6 +1082,13 @@ function renderImagePreviews(files, container) {
     });
 }
 
+function collectSelectedFiles(imageInput, cameraInput) {
+    return [
+        ...Array.from(imageInput?.files || []),
+        ...Array.from(cameraInput?.files || [])
+    ];
+}
+
 function filesToBase64(files) {
     return Promise.all(files.map((file) => new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -1099,8 +1104,8 @@ function filterCatches(catches, formData) {
     const place = String(formData.get("place") || "").trim().toLowerCase();
     const fishMin = parseOptionalNumber(formData.get("fishMin"));
     const fishMax = parseOptionalNumber(formData.get("fishMax"));
-    const weightMin = parseOptionalNumber(formData.get("weightMin"));
-    const weightMax = parseOptionalNumber(formData.get("weightMax"));
+    const weightMin = normalizeInputWeight(parseOptionalNumber(formData.get("weightMin")));
+    const weightMax = normalizeInputWeight(parseOptionalNumber(formData.get("weightMax")));
 
     return catches.filter((item) => {
         const itemDate = item.date || "";
@@ -1149,7 +1154,7 @@ function renderCatchCard(item, compact) {
         `<h3>${escapeHtml(place || t("common.unknownPlace"))}</h3>`,
         `<p>${t("common.date")}: ${escapeHtml(item.date || "-")}</p>`,
         `<p>${t("common.caughtFish")}: ${item.fishCount}</p>`,
-        `<p>${t("common.largestFish")}: ${toFixed(largest)} kg</p>`,
+        `<p>${t("common.largestFish")}: ${formatWeight(largest)}</p>`,
         compact ? "" : `<a class="btn btn-secondary" href="catch-details.html?id=${encodeURIComponent(item.id)}">${t("common.openDetails")}</a>`,
         '</article>'
     ].join("");
@@ -1226,6 +1231,43 @@ function setMessage(el, text, ok) {
 
 function toFixed(value) {
     return Number(value || 0).toFixed(2);
+}
+
+function formatWeight(kgValue) {
+    const value = currentWeightUnit === "lb"
+        ? kgToLb(Number(kgValue || 0))
+        : Number(kgValue || 0);
+    return `${toFixed(value)} ${t(`unit.${currentWeightUnit}`)}`;
+}
+
+function normalizeInputWeight(value) {
+    if (value === null || value === undefined) {
+        return value;
+    }
+
+    const n = Number(value);
+    if (!Number.isFinite(n)) {
+        return 0;
+    }
+
+    return currentWeightUnit === "lb" ? lbToKg(n) : n;
+}
+
+function convertWeightToKg(value, unit) {
+    const n = Number(value || 0);
+    if (!Number.isFinite(n)) {
+        return 0;
+    }
+
+    return String(unit || "kg") === "lb" ? lbToKg(n) : n;
+}
+
+function kgToLb(kg) {
+    return kg * 2.2046226218;
+}
+
+function lbToKg(lb) {
+    return lb / 2.2046226218;
 }
 
 function escapeHtml(value) {
@@ -1378,14 +1420,18 @@ function applyPageTranslations(page, user) {
             setText('label[for="mapsLink"]', t("add.mapsLink"));
             setText(".field-hint", t("add.placeHint"));
             setText('label[for="fishCount"]', t("add.fishCount"));
+            setText('label[for="waterTemp"]', t("add.waterTemp"));
+            setText('label[for="weather"]', t("add.weather"));
             setText(".fish-block h2", t("add.fishDetails"));
             setText("#addFishRow", t("add.addFishRow"));
             setText('label[for="catchImages"]', t("add.uploadPhotos"));
+            setText('label[for="catchCamera"]', t("add.uploadCamera"));
             setText('label[for="notes"]', t("add.notes"));
             setText('#catchForm button[type="submit"]', t("add.save"));
             setPlaceholder("#placeName", t("add.placeNamePh"));
             setPlaceholder("#placeLink", t("add.placeLinkPh"));
             setPlaceholder("#mapsLink", t("add.mapsLinkPh"));
+            setPlaceholder("#weather", t("add.weatherPh"));
             setPlaceholder("#notes", t("add.notesPh"));
             break;
         }
@@ -1398,8 +1444,8 @@ function applyPageTranslations(page, user) {
             setText('label[for="filterPlace"]', t("logbook.place"));
             setText('label[for="filterFishMin"]', t("logbook.fishMin"));
             setText('label[for="filterFishMax"]', t("logbook.fishMax"));
-            setText('label[for="filterWeightMin"]', t("logbook.weightMin"));
-            setText('label[for="filterWeightMax"]', t("logbook.weightMax"));
+            setText('label[for="filterWeightMin"]', `${t("logbook.weightMin")} (${t(`unit.${currentWeightUnit}`)})`);
+            setText('label[for="filterWeightMax"]', `${t("logbook.weightMax")} (${t(`unit.${currentWeightUnit}`)})`);
             setText('#filterForm button[type="submit"]', t("logbook.apply"));
             setText("#clearFilters", t("logbook.clear"));
             setText(".card-head h2", t("logbook.results"));

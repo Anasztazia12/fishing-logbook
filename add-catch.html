@@ -21,7 +21,7 @@
                 <input type="date" id="catchDate" name="catchDate" required>
 
                 <label for="placeName">Place name</label>
-                <input type="text" id="placeName" name="placeName" placeholder="Example: Edinburgh, Union Canal">
+                <input type="text" id="placeName" name="placeName" placeholder="Example: Lake Balaton, North Shore">
 
                 <label for="placeLink">Place link</label>
                 <input type="url" id="placeLink" name="placeLink" placeholder="https://example.com/fishing-spot">
@@ -33,6 +33,12 @@
                 <label for="fishCount">Caught fish count</label>
                 <input type="number" id="fishCount" name="fishCount" min="0" required>
 
+                <label for="waterTemp">Water temperature</label>
+                <input type="number" id="waterTemp" name="waterTemp" min="-5" max="50" step="0.1" placeholder="18.5">
+
+                <label for="weather">Weather</label>
+                <input type="text" id="weather" name="weather" placeholder="Sunny, cloudy, windy...">
+
                 <div class="card fish-block">
                     <div class="card-head">
                         <h2>Fish details (type + weight)</h2>
@@ -43,6 +49,9 @@
 
                 <label for="catchImages">Upload photos</label>
                 <input type="file" id="catchImages" name="catchImages" accept="image/*" multiple>
+
+                <label for="catchCamera">Take photo with phone camera</label>
+                <input type="file" id="catchCamera" name="catchCamera" accept="image/*" capture="environment" multiple>
                 <div id="imagePreview" class="image-preview"></div>
 
                 <label for="notes">Notes</label>

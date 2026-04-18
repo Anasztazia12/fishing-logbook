@@ -1,17 +1,17 @@
 :root {
-	--bg: #eef4f6;
-	--surface: #fcfeff;
-	--line: #b9ced9;
-	--text: #0f2b36;
-	--muted: #3f6672;
-	--primary: #0089bf;
-	--primary-dark: #006b96;
-	--accent: #ff8a00;
-	--accent-soft: #ffe0b8;
-	--vivid: #00b4d8;
+	--bg: #ebe6d9;
+	--surface: #f6f2e6;
+	--line: #8e9877;
+	--text: #263224;
+	--muted: #52634a;
+	--primary: #4f6f3d;
+	--primary-dark: #3f5a31;
+	--accent: #8c5a2d;
+	--accent-soft: #dec39f;
+	--vivid: #6f8d47;
 	--danger: #a5342f;
 	--radius: 16px;
-	--shadow: 0 16px 38px rgba(13, 48, 63, 0.14);
+	--shadow: 0 16px 38px rgba(40, 50, 30, 0.2);
 }
 
 * {
@@ -22,11 +22,12 @@ body {
 	margin: 0;
 	color: var(--text);
 	background:
-		radial-gradient(circle at 10% 8%, #cceeff 0, transparent 30%),
-		radial-gradient(circle at 88% 16%, #ffe5b8 0, transparent 28%),
-		radial-gradient(circle at 52% 100%, #d1f4ff 0, transparent 36%),
-		repeating-linear-gradient(145deg, rgba(13, 79, 102, 0.03) 0 10px, rgba(255, 255, 255, 0.03) 10px 20px),
-		linear-gradient(180deg, #ddf0f7, #ebf7fb 40%, #fff6e7);
+		radial-gradient(circle at 12% 16%, rgba(92, 110, 69, 0.36) 0, transparent 30%),
+		radial-gradient(circle at 84% 24%, rgba(133, 90, 48, 0.28) 0, transparent 34%),
+		radial-gradient(circle at 42% 88%, rgba(105, 120, 86, 0.25) 0, transparent 32%),
+		radial-gradient(circle at 72% 70%, rgba(70, 90, 58, 0.2) 0, transparent 26%),
+		repeating-linear-gradient(32deg, rgba(96, 110, 76, 0.08) 0 22px, rgba(191, 168, 127, 0.08) 22px 42px, rgba(73, 84, 58, 0.08) 42px 62px),
+		linear-gradient(160deg, #d7d0bd, #ece6d8 45%, #d8d2c1);
 	font-family: "Trebuchet MS", "Segoe UI", sans-serif;
 	font-size: clamp(15px, 1.55vw, 17px);
 	line-height: 1.45;
@@ -43,7 +44,7 @@ body {
 	align-items: center;
 	gap: 1rem;
 	padding: 1rem 1.2rem;
-	background: rgba(9, 70, 88, 0.9);
+	background: rgba(58, 74, 48, 0.92);
 	border-bottom: 1px solid rgba(255, 255, 255, 0.2);
 	backdrop-filter: blur(8px);
 }
@@ -118,7 +119,7 @@ body {
 }
 
 .hero {
-	background: linear-gradient(116deg, #fff2cf 0%, #cdf1fb 44%, #cce4ff 100%);
+	background: linear-gradient(128deg, #ede3cd 0%, #d7e0c4 45%, #d3c3a4 100%);
 	border: 1px solid var(--line);
 	border-radius: 20px;
 	padding: clamp(1.4rem, 3.6vw, 2.8rem);
@@ -156,7 +157,7 @@ body {
 
 .card {
 	background: var(--surface);
-	border: 1px solid rgba(14, 116, 144, 0.23);
+	border: 1px solid rgba(84, 99, 60, 0.28);
 	border-radius: var(--radius);
 	padding: clamp(0.85rem, 2vw, 1.15rem);
 	box-shadow: var(--shadow);
@@ -169,7 +170,7 @@ body {
 }
 
 .intro-card {
-	background: linear-gradient(132deg, #fff2cd, #e4f4ff 58%, #d8f3ef);
+	background: linear-gradient(132deg, #eee0c5, #dce4ca 58%, #d5c7a8);
 }
 
 .dashboard-grid {
@@ -181,14 +182,14 @@ body {
 .nav-card {
 	text-decoration: none;
 	color: inherit;
-	border: 1px solid rgba(14, 116, 144, 0.1);
+	border: 1px solid rgba(84, 99, 60, 0.18);
 	transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .nav-card:hover {
 	transform: translateY(-3px);
 	border-color: var(--accent);
-	box-shadow: 0 14px 30px rgba(17, 83, 107, 0.18);
+	box-shadow: 0 14px 30px rgba(62, 72, 46, 0.22);
 }
 
 .auth-grid {
@@ -273,7 +274,7 @@ select:focus {
 }
 
 .btn-primary:hover {
-	background: linear-gradient(120deg, var(--primary-dark), #00a2cc);
+	background: linear-gradient(120deg, var(--primary-dark), #6b8743);
 }
 
 .btn-secondary {
@@ -292,13 +293,13 @@ select:focus {
 
 .btn-ghost {
 	background: rgba(255, 255, 255, 0.4);
-	border: 1px solid rgba(0, 137, 191, 0.35);
-	color: #0b5a72;
+	border: 1px solid rgba(84, 99, 60, 0.4);
+	color: #3f4d31;
 }
 
 .btn-ghost:hover {
 	background: rgba(255, 255, 255, 0.8);
-	border-color: rgba(0, 137, 191, 0.6);
+	border-color: rgba(84, 99, 60, 0.7);
 }
 
 .card-head {
@@ -314,6 +315,17 @@ select:focus {
 	grid-template-columns: 1fr 1fr auto;
 	align-items: end;
 	gap: 0.6rem;
+}
+
+.weight-inline {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 88px;
+	gap: 0.4rem;
+}
+
+.weight-inline select {
+	text-transform: lowercase;
+	padding-inline: 0.35rem;
 }
 
 .filter-grid {
@@ -336,10 +348,10 @@ select:focus {
 }
 
 .list-item {
-	border: 1px solid rgba(14, 116, 144, 0.22);
+	border: 1px solid rgba(84, 99, 60, 0.28);
 	border-radius: 12px;
 	padding: 0.9rem;
-	background: linear-gradient(160deg, #ffffff, #f5fbfd);
+	background: linear-gradient(160deg, #f8f4ea, #ece7d7);
 }
 
 .list-item .btn {
@@ -376,7 +388,7 @@ select:focus {
 }
 
 .badge {
-	background: #e3f4fa;
+	background: #ddd1b7;
 	border-radius: 999px;
 	padding: 0.3rem 0.7rem;
 	font-size: 0.85rem;
