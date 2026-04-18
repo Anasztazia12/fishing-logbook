@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logbook | Fishing Logbook</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body data-page="logbook">
+    <header class="topbar">
+        <a class="brand" href="dashboard.html">Fishing Logbook</a>
+        <nav class="topnav" id="mainNav"></nav>
+    </header>
+
+    <main class="container">
+        <section class="card">
+            <h1>Fishing logbook</h1>
+            <p>Filter by date, place, caught fish count and fish weight.</p>
+
+            <form id="filterForm" class="filter-grid">
+                <label for="filterDateFrom">Date from</label>
+                <input type="date" id="filterDateFrom" name="dateFrom">
+
+                <label for="filterDateTo">Date to</label>
+                <input type="date" id="filterDateTo" name="dateTo">
+
+                <label for="filterPlace">Place</label>
+                <input type="text" id="filterPlace" name="place" placeholder="Example: Edinburgh">
+
+                <label for="filterFishMin">Min fish count</label>
+                <input type="number" id="filterFishMin" name="fishMin" min="0">
+
+                <label for="filterFishMax">Max fish count</label>
+                <input type="number" id="filterFishMax" name="fishMax" min="0">
+
+                <label for="filterWeightMin">Min fish weight (kg)</label>
+                <input type="number" id="filterWeightMin" name="weightMin" min="0" step="0.01">
+
+                <label for="filterWeightMax">Max fish weight (kg)</label>
+                <input type="number" id="filterWeightMax" name="weightMax" min="0" step="0.01">
+
+                <div class="filter-actions">
+                    <button type="submit" class="btn btn-primary">Apply filters</button>
+                    <button type="button" id="clearFilters" class="btn btn-secondary">Clear</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="card">
+            <div class="card-head">
+                <h2>Results</h2>
+                <span id="resultCount" class="badge"></span>
+            </div>
+            <div id="logbookList" class="list-grid"></div>
+        </section>
+    </main>
+
+    <script src="assets/js/app.js" defer></script>
+</body>
+</html>
