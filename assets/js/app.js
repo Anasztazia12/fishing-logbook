@@ -293,6 +293,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 async function bootstrapApp() {
+    ensureBootstrapStyles();
     await loadFirebaseSdk();
     initFirebase();
     await syncAuthState();
@@ -445,8 +446,7 @@ function renderNav(user) {
             `<a href="add-catch.html">${t("nav.addExperience")}</a>`,
             `<a href="my-cathches.html">${t("nav.logbook")}</a>`,
             `<a href="places.html">${t("nav.places")}</a>`,
-            `<button type="button" class="btn-link" id="logoutBtn">${t("nav.logout")}</button>`,
-            renderLanguageSwitch()
+            `<button type="button" class="btn-link" id="logoutBtn">${t("nav.logout")}</button>`
         ].join("");
 
         const logout = document.getElementById("logoutBtn");
@@ -464,12 +464,74 @@ function renderNav(user) {
         nav.innerHTML = [
             `<a href="index.html">${t("nav.home")}</a>`,
             `<a href="login.html">${t("nav.login")}</a>`,
-            `<a href="register.html">${t("nav.register")}</a>`,
-            renderLanguageSwitch()
+            `<a href="register.html">${t("nav.register")}</a>`
         ].join("");
     }
 
-    const langButtons = nav.querySelectorAll(".lang-btn");
+    ensureMenuToggle(nav);
+    ensureTopbarLanguageSwitch();
+}
+
+function ensureBootstrapStyles() {
+    const existing = document.getElementById("bootstrap-cdn");
+    if (existing) {
+        return;
+    }
+
+    const link = document.createElement("link");
+    link.id = "bootstrap-cdn";
+    link.rel = "stylesheet";
+    link.href = "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css";
+    link.integrity = "sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH";
+    link.crossOrigin = "anonymous";
+    document.head.appendChild(link);
+}
+
+function ensureMenuToggle(nav) {
+    const topbar = document.querySelector(".topbar");
+    if (!topbar) {
+        return;
+    }
+
+    let toggle = document.getElementById("menuToggle");
+    if (!toggle) {
+        toggle = document.createElement("button");
+        toggle.type = "button";
+        toggle.id = "menuToggle";
+        toggle.className = "menu-toggle";
+        toggle.setAttribute("aria-label", "Toggle navigation");
+        toggle.setAttribute("aria-expanded", "false");
+        toggle.innerHTML = '<span></span><span></span><span></span>';
+        topbar.insertBefore(toggle, nav);
+    }
+
+    toggle.onclick = () => {
+        const isOpen = nav.classList.toggle("open");
+        toggle.setAttribute("aria-expanded", String(isOpen));
+    };
+}
+
+function ensureTopbarLanguageSwitch() {
+    const topbar = document.querySelector(".topbar");
+    if (!topbar) {
+        return;
+    }
+
+    let langWrap = document.getElementById("topbarLangSwitch");
+    if (!langWrap) {
+        langWrap = document.createElement("div");
+        langWrap.id = "topbarLangSwitch";
+        topbar.appendChild(langWrap);
+    }
+
+    langWrap.innerHTML = renderLanguageSwitch("topbar-lang");
+
+    const toggle = document.getElementById("menuToggle");
+    if (toggle) {
+        topbar.insertBefore(langWrap, toggle);
+    }
+
+    const langButtons = langWrap.querySelectorAll(".lang-btn");
     langButtons.forEach((button) => {
         button.addEventListener("click", () => {
             const lang = button.getAttribute("data-lang") || "en";
@@ -493,7 +555,7 @@ function initIndex(user) {
         actions.innerHTML = [
             `<a class="btn btn-primary" href="login.html">${t("nav.login")}</a>`,
             `<a class="btn btn-secondary" href="register.html">${t("nav.register")}</a>`,
-            `<button class="btn btn-ghost" type="button" id="continueGuestBtn">${t("index.continueGuest")}</button>`
+            `<button class="btn btn-outline-secondary" type="button" id="continueGuestBtn">${t("index.continueGuest")}</button>`
         ].join("");
 
         const guestButton = document.getElementById("continueGuestBtn");
@@ -1303,9 +1365,11 @@ function getPrimaryPlaceLabel(item) {
     return t("common.unknownPlace");
 }
 
-function renderLanguageSwitch() {
+function renderLanguageSwitch(extraClass = "") {
+    const className = ["lang-switch", extraClass].filter(Boolean).join(" ");
+
     return [
-        `<div class="lang-switch" aria-label="${t("nav.lang")}">`,
+        `<div class="${className}" aria-label="${t("nav.lang")}">`,
         `<span>${t("nav.lang")}</span>`,
         `<button type="button" class="lang-btn ${currentLanguage === "en" ? "active" : ""}" data-lang="en">EN</button>`,
         `<button type="button" class="lang-btn ${currentLanguage === "hu" ? "active" : ""}" data-lang="hu">HU</button>`,
