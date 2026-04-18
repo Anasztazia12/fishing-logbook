@@ -35,20 +35,24 @@ body {
 	top: 0;
 	z-index: 5;
 	display: flex;
-	flex-wrap: wrap;
-	justify-content: space-between;
+	flex-wrap: nowrap;
+	justify-content: flex-end;
 	align-items: center;
 	gap: 1rem;
 	padding: 1rem 1.2rem;
+	min-height: 72px;
 	background: rgba(58, 74, 48, 0.92);
 	border-bottom: 1px solid rgba(255, 255, 255, 0.2);
 	backdrop-filter: blur(8px);
 }
 
 .brand {
+	position: absolute;
+	left: 50%;
+	transform: translateX(-50%);
 	text-decoration: none;
 	color: #effbff;
-	font-size: 1.2rem;
+	font-size: clamp(1.22rem, 2.4vw, 1.62rem);
 	font-weight: 800;
 	letter-spacing: 0.04em;
 	text-transform: uppercase;
@@ -57,12 +61,19 @@ body {
 
 .topnav {
 	display: none;
-	width: 100%;
+	position: absolute;
+	right: 1.2rem;
+	top: calc(100% - 2px);
+	width: auto;
+	max-width: min(92vw, 320px);
 	flex-direction: column;
-	align-items: stretch;
+	align-items: flex-end;
 	gap: 0.45rem;
-	max-width: 100%;
-	padding-top: 0.4rem;
+	padding: 0.5rem;
+	background: rgba(47, 60, 39, 0.94);
+	border: 1px solid rgba(255, 255, 255, 0.2);
+	border-radius: 12px;
+	box-shadow: 0 14px 28px rgba(0, 0, 0, 0.25);
 }
 
 .topnav.open {
@@ -91,24 +102,33 @@ body {
 }
 
 .topnav a,
-.btn-link {
+.topnav .btn-link {
 	display: block;
-	width: 100%;
+	width: auto;
 	text-align: left;
 	background: rgba(255, 255, 255, 0.08);
 	color: #d5edf5;
 	text-decoration: none;
 	border: 0;
-	padding: 0.3rem 0.45rem;
+	padding: 0.32rem 0.5rem;
 	border-radius: 8px;
 	font-size: 0.95rem;
 	cursor: pointer;
+	white-space: nowrap;
+	transition: background-color 0.16s ease, color 0.16s ease, transform 0.16s ease;
 }
 
 .topnav a:hover,
-.btn-link:hover {
-	color: #fff6d4;
-	background: rgba(255, 255, 255, 0.08);
+.topnav .btn-link:hover {
+	color: #fff9df;
+	background: rgba(255, 245, 204, 0.24);
+	transform: translateX(-2px);
+}
+
+.topnav a:focus-visible,
+.topnav .btn-link:focus-visible {
+	outline: 2px solid rgba(255, 255, 255, 0.6);
+	outline-offset: 1px;
 }
 
 .lang-switch {
@@ -128,14 +148,13 @@ body {
 .topbar-lang {
 	width: auto;
 	justify-content: center;
-	margin-left: auto;
+	margin-left: 0;
 	padding: 0.22rem 0.4rem;
 	flex-shrink: 0;
 }
 
 .topbar-lang span {
-	font-size: 0.78rem;
-	opacity: 0.9;
+	display: none;
 }
 
 .lang-btn {
@@ -463,6 +482,7 @@ select:focus {
 @media (max-width: 980px) {
 	.topbar {
 		padding: 0.85rem 0.95rem;
+		min-height: 68px;
 	}
 
 	.menu-toggle {
@@ -479,6 +499,7 @@ select:focus {
 
 	.topnav {
 		order: 4;
+		right: 0.95rem;
 	}
 
 	.dashboard-grid {
@@ -502,10 +523,11 @@ select:focus {
 
 	.topnav {
 		gap: 0.4rem;
+		max-width: min(93vw, 280px);
 	}
 
 	.topnav a,
-	.btn-link {
+	.topnav .btn-link {
 		font-size: 0.88rem;
 		padding: 0.45rem 0.55rem;
 	}
@@ -550,7 +572,7 @@ select:focus {
 
 @media (max-width: 430px) {
 	.brand {
-		font-size: 1.02rem;
+		font-size: 1.08rem;
 	}
 
 	.hero h1 {

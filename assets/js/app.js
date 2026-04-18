@@ -509,6 +509,21 @@ function ensureMenuToggle(nav) {
         const isOpen = nav.classList.toggle("open");
         toggle.setAttribute("aria-expanded", String(isOpen));
     };
+
+    if (!nav.dataset.hoverCloseBound) {
+        nav.addEventListener("mouseleave", () => {
+            if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
+                return;
+            }
+
+            if (nav.classList.contains("open")) {
+                nav.classList.remove("open");
+                toggle.setAttribute("aria-expanded", "false");
+            }
+        });
+
+        nav.dataset.hoverCloseBound = "1";
+    }
 }
 
 function ensureTopbarLanguageSwitch() {
