@@ -582,7 +582,7 @@ function renderNav(user) {
             `<a href="add-catch.html">${t("nav.addExperience")}</a>`,
             `<a href="my-cathches.html">${t("nav.logbook")}</a>`,
             `<a href="places.html">${t("nav.places")}</a>`,
-            `<button type="button" class="btn-link" id="changeBgBtn">${t("common.changeBg") || "Change Background"}</button>`,
+            `<button type="button" class="btn-link" id="changeBgBtn">Change background</button>`,
             `<button type="button" class="btn-link" id="logoutBtn">${t("nav.logout")}</button>`
         ].join("");
 
@@ -602,7 +602,7 @@ function renderNav(user) {
             `<a href="index.html">${t("nav.home")}</a>`,
             `<a href="login.html">${t("nav.login")}</a>`,
             `<a href="register.html">${t("nav.register")}</a>`,
-            `<button type="button" class="btn-link" id="changeBgBtn">${t("common.changeBg") || "Change Background"}</button>`
+            `<button type="button" class="btn-link" id="changeBgBtn">Change background</button>`
         ].join("");
     }
 
@@ -633,6 +633,7 @@ function ensureBootstrapStyles() {
 }
 
 function ensureMenuToggle(nav) {
+
     const topbar = document.querySelector(".topbar");
     if (!topbar) {
         return;
@@ -647,28 +648,38 @@ function ensureMenuToggle(nav) {
         toggle.setAttribute("aria-label", "Toggle navigation");
         toggle.setAttribute("aria-expanded", "false");
         toggle.innerHTML = '<span></span><span></span><span></span>';
-        topbar.insertBefore(toggle, nav);
+        // Mindig a topbar legelső eleme legyen a hamburger gomb
+        topbar.insertBefore(toggle, topbar.firstChild);
     }
 
-    toggle.onclick = () => {
+
+    toggle.onclick = (e) => {
         const isOpen = nav.classList.toggle("open");
         toggle.setAttribute("aria-expanded", String(isOpen));
+        if (isOpen) {
+            // Ha megnyílt, figyeljük a dokumentumot
+            setTimeout(() => {
+                document.addEventListener("mousedown", handleMenuOutsideClick);
+                document.addEventListener("touchstart", handleMenuOutsideClick);
+            }, 0);
+        } else {
+            document.removeEventListener("mousedown", handleMenuOutsideClick);
+            document.removeEventListener("touchstart", handleMenuOutsideClick);
+        }
     };
 
-    if (!nav.dataset.hoverCloseBound) {
-        nav.addEventListener("mouseleave", () => {
-            if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
-                return;
-            }
-
-            if (nav.classList.contains("open")) {
-                nav.classList.remove("open");
-                toggle.setAttribute("aria-expanded", "false");
-            }
-        });
-
-        nav.dataset.hoverCloseBound = "1";
+    function handleMenuOutsideClick(event) {
+        // Ha a kattintás NEM a menüben vagy a hamburger gombon történt, zárjuk be
+        if (!nav.contains(event.target) && !toggle.contains(event.target)) {
+            nav.classList.remove("open");
+            toggle.setAttribute("aria-expanded", "false");
+            document.removeEventListener("mousedown", handleMenuOutsideClick);
+            document.removeEventListener("touchstart", handleMenuOutsideClick);
+        }
     }
+
+    // A menü csak a hamburger gombbal nyílik/záródik, nem zárjuk be mouseleave-re
+    // nav.dataset.hoverCloseBound = "1";
 }
 
 function ensureTopbarLanguageSwitch() {

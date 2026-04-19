@@ -106,19 +106,21 @@ body {
 
 .topnav {
 	display: none;
-	position: absolute;
-	right: 1.2rem;
-	top: calc(100% - 2px);
+	position: fixed;
+	left: 2cm;
+	top: 1.5rem;
 	width: auto;
 	max-width: min(92vw, 320px);
 	flex-direction: column;
-	align-items: flex-end;
+	align-items: flex-start;
 	gap: 0.45rem;
 	padding: 0.5rem;
 	background: rgba(47, 60, 39, 0.94);
 	border: 1px solid rgba(255, 255, 255, 0.2);
 	border-radius: 12px;
 	box-shadow: 0 14px 28px rgba(0, 0, 0, 0.25);
+	margin-left: 0;
+	z-index: 1000;
 }
 
 .topnav.open {
@@ -136,6 +138,8 @@ body {
 	flex-direction: column;
 	justify-content: center;
 	align-items: center;
+	margin-left: 0;
+	margin-right: auto;
 }
 
 .menu-toggle span {
@@ -711,27 +715,28 @@ select:focus {
 }
 
 @media (max-width: 980px) {
-	.topbar {
-		padding: 0.85rem 0.95rem;
-		min-height: 68px;
-	}
+   .topbar {
+	   padding: 0.85rem 0.95rem;
+	   min-height: 68px;
+   }
 
-	.menu-toggle {
-		margin-left: auto;
-	}
+   .topbar-lang {
+	   order: 2;
+   }
 
-	.topbar-lang {
-		order: 2;
-	}
+   .menu-toggle {
+	   order: 3;
+	   margin-left: 0;
+	   margin-right: auto;
+   }
 
-	.menu-toggle {
-		order: 3;
-	}
-
-	.topnav {
-		order: 4;
-		right: 0.95rem;
-	}
+   .topnav {
+	   order: 4;
+	   left: 1.2rem;
+	   right: auto;
+	   align-items: flex-start;
+	   margin-left: 0;
+   }
 
 	.dashboard-grid {
 		grid-template-columns: repeat(2, minmax(0, 1fr));
