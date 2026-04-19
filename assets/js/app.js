@@ -14,6 +14,26 @@ const AVAILABLE_BACKGROUNDS = [
     "fishing5.png"
 ];
 
+const bgModalState = {
+    originalBackground: "background.png",
+    previewBackground: "background.png"
+};
+
+function getCurrentBackground() {
+    const img = localStorage.getItem("flb_bg");
+    if (img && AVAILABLE_BACKGROUNDS.includes(img)) {
+        return img;
+    }
+
+    return "background.png";
+}
+
+function previewBackground(img) {
+    if (AVAILABLE_BACKGROUNDS.includes(img)) {
+        document.body.style.backgroundImage = `url('assets/images/${img}')`;
+    }
+}
+
 function openBgModal() {
     let modal = document.getElementById("bgModal");
     if (!modal) {
@@ -28,27 +48,62 @@ function openBgModal() {
                         <button class="bg-thumb" data-img="${img}" style="background-image:url('assets/images/${img}')" title="${img}"></button>
                     `).join("")}
                 </div>
-                <button class="btn btn-secondary" id="closeBgModal">${t("common.close") || "Close"}</button>
+                <div class="card-head" style="justify-content:center; gap:.5rem;">
+                    <button class="btn btn-secondary" id="closeBgModal">${t("common.cancel") || "Cancel"}</button>
+                    <button class="btn btn-primary" id="confirmBgModal">${t("common.ok") || "OK"}</button>
+                </div>
             </div>
         `;
         document.body.appendChild(modal);
     } else {
         modal.hidden = false;
     }
+
+    bgModalState.originalBackground = getCurrentBackground();
+    bgModalState.previewBackground = bgModalState.originalBackground;
+
     modal.style.display = "flex";
     modal.querySelectorAll(".bg-thumb").forEach(btn => {
         btn.onclick = () => {
             const img = btn.getAttribute("data-img");
-            setBackground(img);
-            closeBgModal();
+            if (!img) {
+                return;
+            }
+
+            bgModalState.previewBackground = img;
+            previewBackground(img);
         };
     });
-    document.getElementById("closeBgModal").onclick = closeBgModal;
+
+    const confirmBtn = document.getElementById("confirmBgModal");
+    if (confirmBtn) {
+        confirmBtn.onclick = () => {
+            setBackground(bgModalState.previewBackground);
+            closeBgModal(true);
+        };
+    }
+
+    const closeBtn = document.getElementById("closeBgModal");
+    if (closeBtn) {
+        closeBtn.onclick = () => closeBgModal(false);
+    }
+
+    modal.onclick = (event) => {
+        if (event.target === modal) {
+            closeBgModal(false);
+        }
+    };
 }
 
-function closeBgModal() {
+function closeBgModal(keepPreview = false) {
     const modal = document.getElementById("bgModal");
-    if (modal) modal.style.display = "none";
+    if (!keepPreview) {
+        previewBackground(bgModalState.originalBackground);
+    }
+
+    if (modal) {
+        modal.style.display = "none";
+    }
 }
 
 function setBackground(img) {
@@ -683,31 +738,46 @@ function ensureMenuToggle(nav) {
         controls.appendChild(toggle);
     }
 
+    // Keep controls order stable even when markup is pre-rendered.
+    if (toggle.parentElement !== controls) {
+        controls.appendChild(toggle);
+    }
+
+    const closeNav = () => {
+        nav.classList.remove("open");
+        nav.style.display = "none";
+        toggle.setAttribute("aria-expanded", "false");
+        document.removeEventListener("click", handleMenuGlobalClick);
+    };
 
     toggle.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
         const isOpen = nav.classList.toggle("open");
+        nav.style.display = isOpen ? "flex" : "none";
         toggle.setAttribute("aria-expanded", String(isOpen));
         if (isOpen) {
-            // Ha megnyílt, figyeljük a dokumentumot
+            // Ha megnyílt, barmilyen kattintas zárja (kiveve a toggle gombot).
             setTimeout(() => {
-                document.addEventListener("mousedown", handleMenuOutsideClick);
-                document.addEventListener("touchstart", handleMenuOutsideClick);
+                document.addEventListener("click", handleMenuGlobalClick);
             }, 0);
         } else {
-            document.removeEventListener("mousedown", handleMenuOutsideClick);
-            document.removeEventListener("touchstart", handleMenuOutsideClick);
+            closeNav();
         }
     };
 
-    function handleMenuOutsideClick(event) {
-        // Ha a kattintás NEM a menüben vagy a hamburger gombon történt, zárjuk be
-        if (!nav.contains(event.target) && !toggle.contains(event.target)) {
-            nav.classList.remove("open");
-            toggle.setAttribute("aria-expanded", "false");
-            document.removeEventListener("mousedown", handleMenuOutsideClick);
-            document.removeEventListener("touchstart", handleMenuOutsideClick);
+    function handleMenuGlobalClick(event) {
+        if (!toggle.contains(event.target)) {
+            closeNav();
         }
     }
+
+    // Close menu after selecting a menu action/link.
+    nav.querySelectorAll("a,button").forEach((item) => {
+        item.addEventListener("click", () => {
+            closeNav();
+        });
+    });
 
     // A menü csak a hamburger gombbal nyílik/záródik, nem zárjuk be mouseleave-re
     // nav.dataset.hoverCloseBound = "1";
@@ -747,8 +817,13 @@ function initIndex(user) {
 }
 
 function startGuestSession() {
+    const guestId =
+        typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+            ? crypto.randomUUID()
+            : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
     localStorage.setItem(STORAGE.currentUser, JSON.stringify({
-        id: `guest-${crypto.randomUUID()}`,
+        id: `guest-${guestId}`,
         username: t("nav.guest"),
         email: "",
         isGuest: true
@@ -1798,61 +1873,6 @@ function kgToLb(kg) {
     return kg * 2.2046226218;
 }
 
-function openBgModal() {
-    let modal = document.getElementById("bgModal");
-    let originalBg = document.body.style.backgroundImage;
-    let selectedImg = null;
-    if (!modal) {
-        modal = document.createElement("div");
-        modal.id = "bgModal";
-        modal.className = "modal-overlay";
-        modal.innerHTML = `
-            <div class="modal-card">
-                <h2>${t("common.pictures")}</h2>
-                <div class="bg-options">
-                    ${AVAILABLE_BACKGROUNDS.map(img => `
-                        <button class="bg-thumb" data-img="${img}" style="background-image:url('assets/images/${img}')" title="${img}"></button>
-                    `).join("")}
-                </div>
-                <div style="display:flex; gap:1rem; justify-content:center; margin-top:1.2rem;">
-                  <button class="btn btn-primary" id="okBgModal">${t("common.ok")}</button>
-                  <button class="btn btn-secondary" id="closeBgModal">${t("common.cancel")}</button>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(modal);
-    } else {
-        modal.hidden = false;
-    }
-    modal.style.display = "flex";
-    // Preview logic
-    modal.querySelectorAll(".bg-thumb").forEach(btn => {
-        btn.onclick = () => {
-            selectedImg = btn.getAttribute("data-img");
-            document.body.style.backgroundImage = `url('assets/images/${selectedImg}')`;
-        };
-    });
-    // OK button: set background
-    document.getElementById("okBgModal").onclick = () => {
-        if (selectedImg) {
-            setBackground(selectedImg);
-        }
-        closeBgModal();
-    };
-    // Cancel button: revert preview
-    document.getElementById("closeBgModal").onclick = () => {
-        document.body.style.backgroundImage = originalBg;
-        closeBgModal();
-    };
-    // Click outside modal-card: revert preview and close
-    modal.onclick = (e) => {
-        if (e.target === modal) {
-            document.body.style.backgroundImage = originalBg;
-            closeBgModal();
-        }
-    };
-
-
 function renderLanguageSwitch(extraClass = "") {
     const className = ["lang-switch", extraClass].filter(Boolean).join(" ");
 
@@ -2049,5 +2069,4 @@ function setText(selector, value, root) {
     if (el) {
         el.textContent = value;
     }
-}
 }
