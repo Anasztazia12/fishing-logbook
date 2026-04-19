@@ -283,6 +283,8 @@ const I18N = {
         "add.waterTemp": "Water temperature",
         "add.weather": "Weather",
         "add.weatherPh": "Sunny, cloudy, windy...",
+        "add.baits": "Baits used",
+        "add.baitsPh": "Bait type, brand, color...",
         "add.fishDetails": "Fish details (type + weight)",
         "add.addFishRow": "Add fish row",
         "add.uploadPhotos": "Upload photos",
@@ -444,6 +446,8 @@ const I18N = {
         "add.waterTemp": "Víz hőmérséklet",
         "add.weather": "Időjárás",
         "add.weatherPh": "Napos, felhős, szeles...",
+        "add.baits": "Használt csalik",
+        "add.baitsPh": "Csali típus, márka, szín...",
         "add.fishDetails": "Hal adatok (típus + súly)",
         "add.addFishRow": "Hal sor hozzáadása",
         "add.uploadPhotos": "Fotók feltöltése",
@@ -624,14 +628,11 @@ async function syncAuthState() {
         return;
     }
 
-    const storedUser = getCurrentUser();
-
     await new Promise((resolve) => {
         const unsubscribe = firebaseState.auth.onAuthStateChanged((authUser) => {
             if (!authUser) {
-                if (!storedUser || !storedUser.isGuest) {
-                    localStorage.removeItem(STORAGE.currentUser);
-                }
+                // Keep local and guest sessions intact when Firebase has no active auth user.
+                // Explicit logout already clears STORAGE.currentUser separately.
             } else {
                 localStorage.setItem(STORAGE.currentUser, JSON.stringify({
                     id: authUser.uid,
@@ -996,10 +997,7 @@ async function initLogin() {
                     email: authUser.email || email
                 }));
 
-                setMessage(msg, t("login.success", { fallback: "Login successful. Redirecting..." }), true);
-                setTimeout(() => {
-                    window.location.href = "dashboard.html";
-                }, 500);
+                window.location.href = "dashboard.html";
                 return;
             } catch (error) {
                 const code = String(error?.code || "");
@@ -1026,11 +1024,7 @@ async function initLogin() {
         }
 
         localStorage.setItem(STORAGE.currentUser, JSON.stringify({ id: userByEmail.id, username: userByEmail.username, email: userByEmail.email }));
-        setMessage(msg, t("login.success", { fallback: "Login successful. Redirecting..." }), true);
-
-        setTimeout(() => {
-            window.location.href = "dashboard.html";
-        }, 500);
+        window.location.href = "dashboard.html";
     });
 
     requestResetBtn.addEventListener("click", async () => {
@@ -2047,6 +2041,7 @@ function applyPageTranslations(page, user) {
             setText('label[for="fishCount"]', t("add.fishCount"));
             setText('label[for="waterTemp"]', t("add.waterTemp"));
             setText('label[for="weather"]', t("add.weather"));
+            setText('label[for="baits"]', t("add.baits"));
             setText(".fish-block h2", t("add.fishDetails"));
             setText("#addFishRow", t("add.addFishRow"));
             setText('label[for="catchImages"]', t("add.uploadPhotos"));
@@ -2057,6 +2052,7 @@ function applyPageTranslations(page, user) {
             setPlaceholder("#placeLink", t("add.placeLinkPh"));
             setPlaceholder("#mapsLink", t("add.mapsLinkPh"));
             setPlaceholder("#weather", t("add.weatherPh"));
+            setPlaceholder("#baits", t("add.baitsPh"));
             setPlaceholder("#notes", t("add.notesPh"));
             break;
         }
