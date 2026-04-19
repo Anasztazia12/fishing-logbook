@@ -61,6 +61,8 @@ function applySavedBackground() {
     const img = localStorage.getItem("flb_bg");
     if (img && AVAILABLE_BACKGROUNDS.includes(img)) {
         document.body.style.backgroundImage = `url('assets/images/${img}')`;
+    } else {
+        document.body.style.backgroundImage = "url('assets/images/background.png')";
     }
 }
 
