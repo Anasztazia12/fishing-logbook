@@ -67,13 +67,6 @@ body {
 	.bg-thumb:hover, .bg-thumb:focus {
 		border: 2px solid var(--primary);
 	}
-	background-size: cover;
-	background-position: center;
-	font-family: "Trebuchet MS", "Segoe UI", sans-serif;
-	font-size: clamp(15px, 1.55vw, 17px);
-	line-height: 1.45;
-	min-height: 100vh;
-}
 
 .topbar {
 	position: sticky;
