@@ -355,6 +355,29 @@ body {
 	color: #f8fff5;
 }
 
+.btn-warning {
+	--bs-btn-color: #fbf7ef;
+	--bs-btn-bg: #84613b;
+	--bs-btn-border-color: #4b341e;
+	--bs-btn-hover-color: #fffdf7;
+	--bs-btn-hover-bg: #9a7448;
+	--bs-btn-hover-border-color: #6f4e2d;
+	--bs-btn-focus-shadow-rgb: 114, 83, 48;
+	--bs-btn-active-color: #fffdf7;
+	--bs-btn-active-bg: #6f4e2d;
+	--bs-btn-active-border-color: #4b341e;
+	background: linear-gradient(180deg, #84613b, #5f4326);
+	border-color: #4b341e;
+	color: #fbf7ef;
+}
+
+.btn-warning:hover,
+.btn-warning:focus-visible {
+	background: linear-gradient(180deg, #9a7448, #6f4e2d);
+	border-color: #6f4e2d;
+	color: #fffdf7;
+}
+
 .btn-outline-success:hover,
 .btn-outline-success:focus-visible {
 	background: linear-gradient(180deg, #72b855, #4f8d38);
@@ -528,39 +551,6 @@ select:focus {
 	flex-wrap: wrap;
 	gap: 0.55rem;
 	align-self: stretch;
-}
-
-.btn-earth {
-	--bs-btn-color: #fbf7ef;
-	--bs-btn-bg: #84613b;
-	--bs-btn-border-color: #4b341e;
-	--bs-btn-hover-color: #fffdf7;
-	--bs-btn-hover-bg: #9a7448;
-	--bs-btn-hover-border-color: #6f4e2d;
-	--bs-btn-focus-shadow-rgb: 114, 83, 48;
-	--bs-btn-active-color: #fffdf7;
-	--bs-btn-active-bg: #6f4e2d;
-	--bs-btn-active-border-color: #4b341e;
-	background: linear-gradient(180deg, #84613b, #5f4326);
-	border: 1px solid #4b341e;
-	color: #fbf7ef;
-	box-shadow: 0 10px 22px rgba(52, 34, 18, 0.28);
-	text-shadow: 0 1px 0 rgba(0, 0, 0, 0.28);
-	transition: transform 0.16s ease, box-shadow 0.16s ease, filter 0.16s ease, background 0.16s ease, border-color 0.16s ease;
-}
-
-.btn-earth:hover,
-.btn-earth:focus-visible {
-	background: linear-gradient(180deg, #9a7448, #6f4e2d);
-	border-color: #6f4e2d;
-	color: #fffdf7;
-	box-shadow: 0 14px 28px rgba(52, 34, 18, 0.38);
-	transform: translateY(-1px);
-}
-
-.btn-earth:active {
-	transform: translateY(0);
-	box-shadow: 0 8px 16px rgba(52, 34, 18, 0.24);
 }
 
 .list-grid {

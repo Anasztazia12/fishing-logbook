@@ -2,6 +2,7 @@ const STORAGE = {
     users: "flb_users",
     currentUser: "flb_current_user",
     catches: "flb_catches",
+    resetCodes: "flb_reset_codes",
     language: "flb_language"
 };
 
@@ -58,11 +59,29 @@ const I18N = {
         "login.email": "Email",
         "login.password": "Password",
         "login.button": "Login",
+        "login.emailInvalid": "Email format is invalid.",
+        "login.emailNotFound": "No account found with this email.",
+        "login.passwordWrong": "Password is incorrect.",
+        "login.badCredentials": "Email or password is incorrect.",
+        "login.forgotTitle": "Forgot password?",
+        "login.forgotSubtitle": "Request a reset email or generate a temporary code.",
+        "login.requestReset": "Request reset",
+        "login.resetCode": "Reset code",
+        "login.newPassword": "New password",
+        "login.newPasswordPh": "Type your new password",
+        "login.applyReset": "Reset password",
+        "login.resetEmailSent": "Password reset email sent. Check your inbox.",
+        "login.resetCodeGenerated": "Temporary code generated: {code} (local mode demo)",
+        "login.resetCodeMissing": "No reset code requested for this email.",
+        "login.resetCodeExpired": "Reset code expired. Request a new one.",
+        "login.resetCodeInvalid": "Reset code is invalid.",
+        "login.resetSuccess": "Password updated. You can log in with the new password.",
         "login.noAccount": "No account yet?",
         "login.registerHere": "Register here",
         "register.title": "Register",
         "register.subtitle": "Create your personal fishing logbook account.",
         "register.username": "Username",
+        "register.usernameRequired": "Username must be at least 3 characters.",
         "register.email": "Email",
         "register.password": "Password",
         "register.button": "Create account",
@@ -182,11 +201,29 @@ const I18N = {
         "login.email": "Email",
         "login.password": "Jelszó",
         "login.button": "Belépés",
+        "login.emailInvalid": "Az email cím formátuma hibás.",
+        "login.emailNotFound": "Ehhez az email címhez nem található fiók.",
+        "login.passwordWrong": "A jelszó helytelen.",
+        "login.badCredentials": "Hibás email cím vagy jelszó.",
+        "login.forgotTitle": "Elfelejtett jelszó?",
+        "login.forgotSubtitle": "Kérj visszaállító emailt vagy ideiglenes kódot.",
+        "login.requestReset": "Visszaállítás kérése",
+        "login.resetCode": "Visszaállító kód",
+        "login.newPassword": "Új jelszó",
+        "login.newPasswordPh": "Add meg az új jelszót",
+        "login.applyReset": "Jelszó visszaállítása",
+        "login.resetEmailSent": "A jelszó-visszaállító email elküldve. Nézd meg a postafiókodat.",
+        "login.resetCodeGenerated": "Ideiglenes kód generálva: {code} (helyi mód demo)",
+        "login.resetCodeMissing": "Ehhez az emailhez nincs kért visszaállító kód.",
+        "login.resetCodeExpired": "A visszaállító kód lejárt. Kérj újat.",
+        "login.resetCodeInvalid": "A visszaállító kód hibás.",
+        "login.resetSuccess": "A jelszó frissítve. Most már be tudsz lépni az új jelszóval.",
         "login.noAccount": "Nincs fiókod?",
         "login.registerHere": "Regisztrálj itt",
         "register.title": "Regisztráció",
         "register.subtitle": "Hozd létre a saját horgásznapló fiókodat.",
         "register.username": "Felhasználónév",
+        "register.usernameRequired": "A felhasználónév legalább 3 karakter legyen.",
         "register.email": "Email",
         "register.password": "Jelszó",
         "register.button": "Fiók létrehozása",
@@ -569,7 +606,7 @@ function initIndex(user) {
     } else {
         actions.innerHTML = [
             `<a class="btn btn-primary btn-lg" href="login.html">${t("nav.login")}</a>`,
-            `<a class="btn btn-dark btn-lg" href="register.html">${t("nav.register")}</a>`,
+            `<a class="btn btn-secondary btn-lg" href="register.html">${t("nav.register")}</a>`,
             `<button class="btn btn-outline-success btn-lg fw-bold" type="button" id="continueGuestBtn">${t("index.continueGuest")}</button>`
         ].join("");
 
@@ -607,6 +644,11 @@ async function initRegister() {
         const username = String(formData.get("username") || "").trim();
         const email = String(formData.get("email") || "").trim().toLowerCase();
         const password = String(formData.get("password") || "").trim();
+
+        if (username.length < 3) {
+            setMessage(msg, t("register.usernameRequired"), false);
+            return;
+        }
 
         if (firebaseState.enabled && firebaseState.auth) {
             try {
@@ -661,8 +703,14 @@ async function initRegister() {
 async function initLogin() {
     const form = document.getElementById("loginForm");
     const msg = document.getElementById("loginMessage");
+    const resetEmailInput = document.getElementById("resetEmail");
+    const resetCodeInput = document.getElementById("resetCode");
+    const resetNewPasswordInput = document.getElementById("resetNewPassword");
+    const requestResetBtn = document.getElementById("requestResetCode");
+    const applyResetBtn = document.getElementById("applyResetCode");
+    const resetMsg = document.getElementById("resetMessage");
 
-    if (!form || !msg) {
+    if (!form || !msg || !resetEmailInput || !resetCodeInput || !resetNewPasswordInput || !requestResetBtn || !applyResetBtn || !resetMsg) {
         return;
     }
 
@@ -672,6 +720,11 @@ async function initLogin() {
         const formData = new FormData(form);
         const email = String(formData.get("email") || "").trim().toLowerCase();
         const password = String(formData.get("password") || "").trim();
+
+        if (!isValidEmail(email)) {
+            setMessage(msg, t("login.emailInvalid"), false);
+            return;
+        }
 
         if (firebaseState.enabled && firebaseState.auth) {
             try {
@@ -696,19 +749,121 @@ async function initLogin() {
         }
 
         const users = readStorage(STORAGE.users, []);
-        const found = users.find((u) => u.email === email && u.password === password);
+        const userByEmail = users.find((u) => u.email === email);
 
-        if (!found) {
-            setMessage(msg, t("login.invalid", { fallback: "Invalid email or password." }), false);
+        if (!userByEmail) {
+            setMessage(msg, t("login.emailNotFound"), false);
             return;
         }
 
-        localStorage.setItem(STORAGE.currentUser, JSON.stringify({ id: found.id, username: found.username, email: found.email }));
+        if (userByEmail.password !== password) {
+            setMessage(msg, t("login.passwordWrong"), false);
+            return;
+        }
+
+        localStorage.setItem(STORAGE.currentUser, JSON.stringify({ id: userByEmail.id, username: userByEmail.username, email: userByEmail.email }));
         setMessage(msg, t("login.success", { fallback: "Login successful. Redirecting..." }), true);
 
         setTimeout(() => {
             window.location.href = "dashboard.html";
         }, 500);
+    });
+
+    requestResetBtn.addEventListener("click", async () => {
+        const email = String(resetEmailInput.value || "").trim().toLowerCase();
+        if (!isValidEmail(email)) {
+            setMessage(resetMsg, t("login.emailInvalid"), false);
+            return;
+        }
+
+        if (firebaseState.enabled && firebaseState.auth) {
+            try {
+                await firebaseState.auth.sendPasswordResetEmail(email);
+                setMessage(resetMsg, t("login.resetEmailSent"), true);
+                return;
+            } catch (error) {
+                setMessage(resetMsg, parseFirebaseError(error, t("login.badCredentials")), false);
+                return;
+            }
+        }
+
+        const users = readStorage(STORAGE.users, []);
+        const userByEmail = users.find((u) => u.email === email);
+        if (!userByEmail) {
+            setMessage(resetMsg, t("login.emailNotFound"), false);
+            return;
+        }
+
+        const code = String(Math.floor(100000 + Math.random() * 900000));
+        const resetCodes = readStorage(STORAGE.resetCodes, {});
+        resetCodes[email] = {
+            code,
+            expiresAt: Date.now() + 10 * 60 * 1000
+        };
+        writeStorage(STORAGE.resetCodes, resetCodes);
+        setMessage(resetMsg, t("login.resetCodeGenerated", { code }), true);
+    });
+
+    applyResetBtn.addEventListener("click", () => {
+        const email = String(resetEmailInput.value || "").trim().toLowerCase();
+        const code = String(resetCodeInput.value || "").trim();
+        const nextPassword = String(resetNewPasswordInput.value || "").trim();
+
+        if (!isValidEmail(email)) {
+            setMessage(resetMsg, t("login.emailInvalid"), false);
+            return;
+        }
+
+        if (nextPassword.length < 4) {
+            setMessage(resetMsg, t("register.weak", { fallback: "Password is too weak." }), false);
+            return;
+        }
+
+        if (firebaseState.enabled && firebaseState.auth) {
+            setMessage(resetMsg, t("login.resetEmailSent"), false);
+            return;
+        }
+
+        const resetCodes = readStorage(STORAGE.resetCodes, {});
+        const entry = resetCodes[email];
+        if (!entry) {
+            setMessage(resetMsg, t("login.resetCodeMissing"), false);
+            return;
+        }
+
+        if (Number(entry.expiresAt) < Date.now()) {
+            delete resetCodes[email];
+            writeStorage(STORAGE.resetCodes, resetCodes);
+            setMessage(resetMsg, t("login.resetCodeExpired"), false);
+            return;
+        }
+
+        if (String(entry.code) !== code) {
+            setMessage(resetMsg, t("login.resetCodeInvalid"), false);
+            return;
+        }
+
+        const users = readStorage(STORAGE.users, []);
+        const index = users.findIndex((u) => u.email === email);
+        if (index === -1) {
+            setMessage(resetMsg, t("login.emailNotFound"), false);
+            return;
+        }
+
+        users[index].password = nextPassword;
+        writeStorage(STORAGE.users, users);
+        delete resetCodes[email];
+        writeStorage(STORAGE.resetCodes, resetCodes);
+        setMessage(resetMsg, t("login.resetSuccess"), true);
+
+        const loginEmail = document.getElementById("loginEmail");
+        const loginPassword = document.getElementById("loginPassword");
+        if (loginEmail instanceof HTMLInputElement) {
+            loginEmail.value = email;
+        }
+        if (loginPassword instanceof HTMLInputElement) {
+            loginPassword.value = nextPassword;
+        }
     });
 }
 
@@ -1273,16 +1428,22 @@ function parseFirebaseError(error, fallback) {
         case "auth/email-already-in-use":
             return t("register.alreadyExists", { fallback: "This email is already registered." });
         case "auth/invalid-email":
-            return t("login.invalid", { fallback: "Invalid email or password." });
+            return t("login.emailInvalid", { fallback: "Email format is invalid." });
         case "auth/weak-password":
             return t("register.weak", { fallback: "Password is too weak." });
         case "auth/user-not-found":
+            return t("login.emailNotFound", { fallback: "No account found with this email." });
         case "auth/wrong-password":
+            return t("login.passwordWrong", { fallback: "Password is incorrect." });
         case "auth/invalid-credential":
-            return t("login.invalid", { fallback: "Invalid email or password." });
+            return t("login.badCredentials", { fallback: "Email or password is incorrect." });
         default:
             return fallback;
     }
+}
+
+function isValidEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || "").trim());
 }
 
 function readStorage(key, fallback) {
@@ -1443,6 +1604,14 @@ function applyPageTranslations(page, user) {
             setText('label[for="loginEmail"]', t("login.email"));
             setText('label[for="loginPassword"]', t("login.password"));
             setText("#loginForm button", t("login.button"));
+            setText("#resetTitle", t("login.forgotTitle"));
+            setText("#resetSubtitle", t("login.forgotSubtitle"));
+            setText('label[for="resetEmail"]', t("login.email"));
+            setText('label[for="resetCode"]', t("login.resetCode"));
+            setText('label[for="resetNewPassword"]', t("login.newPassword"));
+            setText("#requestResetCode", t("login.requestReset"));
+            setText("#applyResetCode", t("login.applyReset"));
+            setPlaceholder("#resetNewPassword", t("login.newPasswordPh"));
             const fine = document.querySelector(".auth-card .fine-print");
             if (fine) {
                 fine.innerHTML = `${t("login.noAccount")} <a href="register.html">${t("login.registerHere")}</a>.`;

@@ -23,8 +23,28 @@
                 <label for="loginPassword">Password</label>
                 <input type="password" id="loginPassword" name="password" required>
 
-                <button type="submit" class="btn btn-earth">Login</button>
+                <button type="submit" class="btn btn-dark">Login</button>
             </form>
+
+            <section class="stack" id="resetPanel">
+                <h2 id="resetTitle">Forgot password?</h2>
+                <p id="resetSubtitle">Request a reset email or generate a temporary code.</p>
+
+                <label for="resetEmail">Email</label>
+                <input type="email" id="resetEmail" name="resetEmail">
+
+                <button type="button" id="requestResetCode" class="btn btn-dark">Request reset</button>
+
+                <label for="resetCode">Reset code</label>
+                <input type="text" id="resetCode" name="resetCode" inputmode="numeric" pattern="[0-9]*">
+
+                <label for="resetNewPassword">New password</label>
+                <input type="password" id="resetNewPassword" name="resetNewPassword" placeholder="Type your new password">
+
+                <button type="button" id="applyResetCode" class="btn btn-dark">Reset password</button>
+                <p id="resetMessage" class="message" aria-live="polite"></p>
+            </section>
+
             <p class="fine-print">No account yet? <a href="register.html">Register here</a>.</p>
             <p id="loginMessage" class="message" aria-live="polite"></p>
         </section>
