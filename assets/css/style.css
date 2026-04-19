@@ -681,6 +681,26 @@ select:focus {
 	border-color: rgba(70, 110, 56, 0.45);
 }
 
+.logbook-carousel-list {
+	display: flex;
+	overflow-x: auto;
+	gap: 0.7rem;
+	scroll-snap-type: x mandatory;
+	padding-bottom: 0.3rem;
+}
+
+.logbook-carousel-list .list-item {
+	min-width: min(360px, 85vw);
+	max-width: min(420px, 92vw);
+	flex: 0 0 auto;
+	scroll-snap-align: start;
+}
+
+.logbook-card-thumb {
+	height: 180px;
+	margin-bottom: 0.55rem;
+}
+
 .fine-print {
 	font-size: 0.9rem;
 	color: var(--muted);
@@ -868,8 +888,9 @@ select:focus {
 
 	.filter-grid {
 		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
 
-	#logbookList.list-grid {
+	.logbook-carousel-list {
 		display: flex;
 		overflow-x: auto;
 		gap: 0.6rem;
@@ -877,63 +898,62 @@ select:focus {
 		padding-bottom: 0.2rem;
 	}
 
-	#logbookList .list-item {
+	.logbook-carousel-list .list-item {
 		min-width: min(84vw, 290px);
 		flex: 0 0 auto;
 		scroll-snap-align: start;
-	}
 	}
 
 	.place-layout {
 		grid-template-columns: 1fr;
 	}
+}
 
-	@media (max-width: 640px) {
-		.topbar {
-			flex-wrap: wrap;
-			justify-content: space-between;
-			align-items: center;
-			gap: 0.55rem;
-			padding: 0.75rem 0.85rem 0.95rem;
-		}
+@media (max-width: 640px) {
+	.topbar {
+		flex-wrap: wrap;
+		justify-content: space-between;
+		align-items: center;
+		gap: 0.55rem;
+		padding: 0.75rem 0.85rem 0.95rem;
+	}
 
-		.topbar-controls {
-			order: 1;
-			width: 100%;
-			display: flex;
-			align-items: center;
-			justify-content: space-between;
-			margin-left: 0;
-		}
+	.topbar-controls {
+		order: 1;
+		width: 100%;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin-left: 0;
+	}
 
-		.topbar-lang {
-			order: 1;
-			justify-content: flex-start;
-		}
+	.topbar-lang {
+		order: 1;
+		justify-content: flex-start;
+	}
 
-		.menu-toggle {
-			order: 2;
-			margin-left: auto;
-		}
+	.menu-toggle {
+		order: 2;
+		margin-left: auto;
+	}
 
-		.brand {
-			order: 2;
-			position: static;
-			left: auto;
-			transform: none;
-			width: 100%;
-			text-align: center;
-			font-size: clamp(1rem, 5vw, 1.2rem);
-			padding: 0 3.2rem;
-			white-space: normal;
-			line-height: 1.15;
-		}
+	.brand {
+		order: 2;
+		position: static;
+		left: auto;
+		transform: none;
+		width: 100%;
+		text-align: center;
+		font-size: clamp(1rem, 5vw, 1.2rem);
+		padding: 0 3.2rem;
+		white-space: normal;
+		line-height: 1.15;
+	}
 
-		.topnav {
-			top: 4.2rem;
-			right: 0.85rem;
-			max-width: min(92vw, 300px);
-		}
+	.topnav {
+		top: 4.2rem;
+		right: 0.85rem;
+		max-width: min(92vw, 300px);
 	}
 }
 

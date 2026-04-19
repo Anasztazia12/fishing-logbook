@@ -20,6 +20,13 @@
             <h1>Fishing logbook</h1>
             <p>Filter by date, place, caught fish count and fish weight.</p>
 
+            <div class="card-head">
+                <button type="button" id="toggleFilterPanel" class="btn btn-secondary">
+                    🔍 Search
+                </button>
+            </div>
+
+            <div id="filterPanel" hidden>
             <form id="filterForm" class="filter-grid">
                 <label for="filterDateFrom">Date from</label>
                 <input type="date" id="filterDateFrom" name="dateFrom">
@@ -50,6 +57,7 @@
                     <button type="button" id="clearFilters" class="btn btn-primary">Clear</button>
                 </div>
             </form>
+            </div>
         </section>
 
         <section class="card">
@@ -57,7 +65,7 @@
                 <h2>Results</h2>
                 <span id="resultCount" class="badge"></span>
             </div>
-            <div id="logbookList" class="list-grid"></div>
+            <div id="logbookList" class="list-grid logbook-carousel-list"></div>
         </section>
 
         <div id="logbookDetailsModal" class="reset-modal-overlay" hidden>

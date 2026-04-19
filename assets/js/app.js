@@ -188,6 +188,7 @@ const PASSWORD_POLICY = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*()_\-+=.?]{8,20
 const I18N = {
     en: {
         "nav.dashboard": "Dashboard",
+        "nav.startScreen": "Start screen",
         "nav.addExperience": "Add Experience",
         "nav.logbook": "Logbook",
         "nav.places": "Places",
@@ -310,6 +311,8 @@ const I18N = {
         "logbook.dateTo": "Date to",
         "logbook.place": "Place",
         "logbook.placePh": "Example: Lake Balaton",
+        "logbook.search": "Search",
+        "logbook.searchToggle": "Show/hide filters",
         "logbook.fishType": "Fish type",
         "logbook.fishTypePh": "Carp, Pike...",
         "logbook.fishMin": "Min fish count",
@@ -365,6 +368,7 @@ const I18N = {
     },
     hu: {
         "nav.dashboard": "Kezdőlap",
+        "nav.startScreen": "Kezdőképernyő",
         "nav.addExperience": "Új élmény",
         "nav.logbook": "Horgásznapló",
         "nav.places": "Helyszínek",
@@ -487,6 +491,8 @@ const I18N = {
         "logbook.dateTo": "Dátumig",
         "logbook.place": "Helyszín",
         "logbook.placePh": "Példa: Balaton",
+        "logbook.search": "Keresés",
+        "logbook.searchToggle": "Szűrők mutatása/elrejtése",
         "logbook.fishType": "Hal típusa",
         "logbook.fishTypePh": "Ponty, csuka...",
         "logbook.fishMin": "Minimum halszám",
@@ -766,17 +772,20 @@ function renderNav(user) {
         return;
     }
 
+    const effectiveUser = isUserSessionActive(user) ? user : null;
+
     let navHtml = "";
-    if (user) {
-        const guestLabel = user.isGuest ? ` (${t("nav.guest")})` : "";
+    if (effectiveUser) {
+        const guestLabel = effectiveUser.isGuest ? ` (${t("nav.guest")})` : "";
         navHtml = [
+            `<a href="index.html">${t("nav.startScreen")}</a>`,
             `<a href="dashboard.html">${t("nav.dashboard")}${guestLabel}</a>`,
             `<a href="add-catch.html">${t("nav.addExperience")}</a>`,
             `<a href="my-cathches.html">${t("nav.logbook")}</a>`,
             `<a href="places.html">${t("nav.places")}</a>`,
             `<button type="button" class="btn-link" id="changeBgBtn">${t("common.changeBg")}</button>`,
             `<button type="button" class="btn-link" id="logoutBtn">${t("nav.logout")}</button>`,
-            user.isGuest ? "" : `<button type="button" class="btn-link btn-danger-link" id="deleteAccountBtn">${t("nav.deleteAccount")}</button>`
+            effectiveUser.isGuest ? "" : `<button type="button" class="btn-link btn-danger-link" id="deleteAccountBtn">${t("nav.deleteAccount")}</button>`
         ].join("");
     } else {
         navHtml = [
@@ -788,7 +797,7 @@ function renderNav(user) {
     }
     nav.innerHTML = navHtml;
 
-    if (user) {
+    if (effectiveUser) {
         const logout = document.getElementById("logoutBtn");
         const deleteAccountBtn = document.getElementById("deleteAccountBtn");
         if (logout) {
@@ -821,6 +830,24 @@ function renderNav(user) {
     // Always show language switch
     const langWrap = document.getElementById("topbarLangSwitch");
     if (langWrap) langWrap.style.display = "flex";
+}
+
+function isUserSessionActive(user) {
+    if (!user) {
+        return false;
+    }
+
+    if (user.isGuest) {
+        return true;
+    }
+
+    if (firebaseState.auth && firebaseState.auth.currentUser) {
+        const authUser = firebaseState.auth.currentUser;
+        return authUser.uid === user.id || String(authUser.email || "").toLowerCase() === String(user.email || "").toLowerCase();
+    }
+
+    const users = readStorage(STORAGE.users, []);
+    return users.some((stored) => String(stored.email || "").toLowerCase() === String(user.email || "").toLowerCase());
 }
 
 function ensureBootstrapStyles() {
@@ -1449,8 +1476,10 @@ async function initLogbook(user) {
     const modal = document.getElementById("logbookDetailsModal");
     const modalContent = document.getElementById("logbookDetailsContent");
     const closeModalBtn = document.getElementById("closeLogbookDetails");
+    const filterPanel = document.getElementById("filterPanel");
+    const toggleFilterPanelBtn = document.getElementById("toggleFilterPanel");
 
-    if (!form || !clearBtn || !container || !count || !modal || !modalContent || !closeModalBtn) {
+    if (!form || !clearBtn || !container || !count || !modal || !modalContent || !closeModalBtn || !filterPanel || !toggleFilterPanelBtn) {
         return;
     }
 
@@ -1460,7 +1489,14 @@ async function initLogbook(user) {
         if (fishMinInput) {
             fishMinInput.value = "1";
         }
+        filterPanel.hidden = false;
+    } else {
+        filterPanel.hidden = true;
     }
+
+    toggleFilterPanelBtn.addEventListener("click", () => {
+        filterPanel.hidden = !filterPanel.hidden;
+    });
 
     const catches = await getUserCatches(user.id);
 
@@ -1999,12 +2035,22 @@ function renderCatchCard(item, compact) {
     const place = getPrimaryPlaceLabel(item);
 
     const largest = getLargestWeight(item);
+    const imageList = Array.isArray(item.imageData) ? item.imageData : [];
+    const coverImage = imageList[0] || "";
+    const fishItems = Array.isArray(item.fishItems) ? item.fishItems : [];
+    const fishSummary = fishItems.length
+        ? fishItems.map((fish) => escapeHtml(String(fish.type || "-"))).join(", ")
+        : "-";
 
     return [
         `<article class="list-item" data-catch-id="${escapeAttr(item.id)}">`,
+        compact || !coverImage
+            ? ""
+            : `<img src="${escapeAttr(coverImage)}" alt="Catch photo" class="thumb logbook-card-thumb">`,
         `<h3>${escapeHtml(place || t("common.unknownPlace"))}</h3>`,
         `<p>${t("common.date")}: ${escapeHtml(item.date || "-")}</p>`,
         `<p>${t("common.caughtFish")}: ${item.fishCount}</p>`,
+        compact ? "" : `<p>${t("details.type")}: ${fishSummary}</p>`,
         `<p>${t("common.largestFish")}: ${formatWeight(largest)}</p>`,
         compact ? "" : `<a class="btn btn-secondary open-detail-link" href="catch-details.html?id=${encodeURIComponent(item.id)}">${t("common.openDetails")}</a>`,
         '</article>'
@@ -2354,6 +2400,14 @@ function applyPageTranslations(page, user) {
             document.title = `${t("nav.logbook")} | Fishing Logbook`;
             setText(".card h1", t("logbook.title"));
             setText(".card > p", t("logbook.subtitle"));
+            setText("#toggleFilterPanel", `🔍 ${t("logbook.search")}`);
+            {
+                const toggleBtn = document.getElementById("toggleFilterPanel");
+                if (toggleBtn) {
+                    toggleBtn.setAttribute("title", t("logbook.searchToggle"));
+                    toggleBtn.setAttribute("aria-label", t("logbook.searchToggle"));
+                }
+            }
             setText('label[for="filterDateFrom"]', t("logbook.dateFrom"));
             setText('label[for="filterDateTo"]', t("logbook.dateTo"));
             setText('label[for="filterPlace"]', t("logbook.place"));
