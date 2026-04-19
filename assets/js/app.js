@@ -209,6 +209,8 @@ const I18N = {
         "index.openDashboard": "Open Dashboard",
         "index.addResult": "Add New Result",
         "index.continueGuest": "Continue as Guest",
+        "index.loginBtn": "Login",
+        "index.registerBtn": "Registration",
         "login.title": "Login",
         "login.subtitle": "Access your fishing dashboard.",
         "login.email": "Email",
@@ -368,6 +370,8 @@ const I18N = {
         "index.openDashboard": "Kezdőlap megnyitása",
         "index.addResult": "Új eredmény rögzítése",
         "index.continueGuest": "Folytatás vendégként",
+        "index.loginBtn": "Bejelentkezés",
+        "index.registerBtn": "Regisztráció",
         "login.passwordWrong": "A jelszó helytelen.",
         "login.badCredentials": "Hibás email cím vagy jelszó.",
         "login.forgotTitle": "Elfelejtett jelszó?",
@@ -1794,8 +1798,8 @@ function setupPasswordToggle(inputElement, toggleButton, translationPrefix) {
         return;
     }
 
-    const EYE_OPEN = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
-    const EYE_CLOSED = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+    const EYE_OPEN = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="12" rx="10" ry="6"/><circle cx="12" cy="12" r="2.8" fill="currentColor" stroke="none"/></svg>`;
+    const EYE_CLOSED = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14c2-2.5 4.5-4 8-4s6 1.5 8 4"/><path d="M6.5 16.5l-1 1.5M12 18v2M17.5 16.5l1 1.5"/></svg>`;
 
     let autoHideTimer = null;
 
@@ -1946,6 +1950,9 @@ function applyPageTranslations(page, user) {
             setText(".hero-kicker", t("index.kicker"));
             setText(".hero h1", t("index.title"));
             setText(".hero-text", t("index.text"));
+            setText("a.hero-btn[href='login.html']", t("index.loginBtn"));
+            setText("a.hero-btn[href='register.html']", t("index.registerBtn"));
+            setText("#continueGuestBtn", t("index.continueGuest"));
             break;
         case "login": {
             document.title = `${t("login.title")} | Fishing Logbook`;
