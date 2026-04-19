@@ -260,19 +260,9 @@ body {
 	transform: translateY(0);
 	box-shadow: 0 8px 18px rgba(34, 66, 24, 0.28);
 }
-.btn-check:checked + .btn,
-.btn-check:active + .btn,
-.btn-check:focus-visible + .btn {
-	box-shadow: 0 0 0 0.18rem rgba(95, 140, 67, 0.28) !important;
-}
-
 .btn-primary,
 .btn-secondary,
-.btn-info,
 .btn-dark,
-.btn-outline-primary,
-.btn-outline-secondary,
-.btn-success,
 .btn-outline-success {
 	border-width: 2px;
 	box-shadow: 0 10px 22px rgba(35, 45, 28, 0.2);
@@ -318,64 +308,9 @@ body {
 	color: #ffffff;
 }
 
-.btn-info,
-.btn-outline-primary,
-.btn-outline-secondary {
-	border-color: #5f8c43;
-	color: #24411e;
-	background: transparent;
-}
-
-.btn-info:hover,
-.btn-info:focus-visible,
-.btn-outline-primary:hover,
-.btn-outline-primary:focus-visible,
-.btn-outline-secondary:hover,
-.btn-outline-secondary:focus-visible {
-	background: rgba(95, 140, 67, 0.2);
-	border-color: #44652f;
-	color: #173216;
-}
-
-.btn-success,
 .btn-outline-success {
 	border-color: #5f8c43;
 	color: #173216;
-}
-
-.btn-success {
-	background: linear-gradient(180deg, #6fa950, #4f8d38);
-	color: #f6fff2;
-}
-
-.btn-success:hover,
-.btn-success:focus-visible {
-	background: linear-gradient(180deg, #7fc35d, #5a9d43);
-	border-color: #376326;
-	color: #f8fff5;
-}
-
-.btn-warning {
-	--bs-btn-color: #fbf7ef;
-	--bs-btn-bg: #84613b;
-	--bs-btn-border-color: #4b341e;
-	--bs-btn-hover-color: #fffdf7;
-	--bs-btn-hover-bg: #9a7448;
-	--bs-btn-hover-border-color: #6f4e2d;
-	--bs-btn-focus-shadow-rgb: 114, 83, 48;
-	--bs-btn-active-color: #fffdf7;
-	--bs-btn-active-bg: #6f4e2d;
-	--bs-btn-active-border-color: #4b341e;
-	background: linear-gradient(180deg, #84613b, #5f4326);
-	border-color: #4b341e;
-	color: #fbf7ef;
-}
-
-.btn-warning:hover,
-.btn-warning:focus-visible {
-	background: linear-gradient(180deg, #9a7448, #6f4e2d);
-	border-color: #6f4e2d;
-	color: #fffdf7;
 }
 
 .btn-outline-success:hover,
@@ -388,19 +323,14 @@ body {
 .btn-outline-success:active,
 .btn-primary:active,
 .btn-secondary:active,
-.btn-dark:active,
-.btn-success:active {
+.btn-dark:active {
 	transform: translateY(0);
 }
 
 .btn:focus,
 .btn:focus-visible,
 .btn:active:focus,
-.btn.active:focus,
-.btn-check:focus + .btn,
-.btn-check:checked + .btn:focus,
-.btn-check:active + .btn:focus,
-.btn-check:focus-visible + .btn {
+.btn.active:focus {
 	outline: none !important;
 	box-shadow: 0 0 0 0.18rem rgba(95, 140, 67, 0.28) !important;
 }
@@ -523,28 +453,6 @@ select:focus {
 	border-color: var(--primary);
 	background: #f2ead5;
 }
-
-.inline-fieldset {
-	border: 1px solid var(--line);
-	border-radius: 10px;
-	padding: 0.65rem;
-	display: flex;
-	flex-wrap: wrap;
-	gap: 0.75rem;
-}
-
-.inline-fieldset label {
-	display: inline-flex;
-	align-items: center;
-	gap: 0.35rem;
-	font-weight: 500;
-}
-
-.inline-fieldset input[type="radio"] {
-	width: auto;
-}
-
-
 
 .card-head {
 	display: flex;

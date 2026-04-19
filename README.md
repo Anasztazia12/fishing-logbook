@@ -277,8 +277,8 @@ Location-based view with:
 
 Tested the following critical user journeys:
 
-|           Feature               |             Expected Result               |             Actual Result                 |        Pass        |
-| ------------------------------- | ----------------------------------------- | ----------------------------------------- | ------------------ |
+| Feature | Expected Result | Actual Result | Pass |
+| ----- | ----- | ---- | ----- |
 | User registration | New account created successfully | Works as expected | Yes |
 | User login | Valid credentials log user in | Works as expected | Yes |
 | Guest mode | Continue without login | Works as expected | Yes |
