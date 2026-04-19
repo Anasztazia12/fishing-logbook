@@ -21,9 +21,15 @@
 body {
 	margin: 0;
 	color: var(--text);
+	font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+	font-size: clamp(15px, 1.55vw, 17px);
+	line-height: 1.45;
+	min-height: 100vh;
+	background-size: cover;
+	background-position: center;
 	/* background-image set dynamically */
-		transition: background-image 0.3s;
-	}
+	transition: background-image 0.3s;
+}
 
 	.modal-overlay {
 		position: fixed;
