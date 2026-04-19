@@ -117,6 +117,7 @@ const I18N = {
         "nav.register": "Register",
         "nav.guest": "Guest",
         "common.close": "Close",
+        "common.changeBg": "Change background",
         "nav.lang": "Language",
         "nav.weight": "Weight",
         "index.kicker": "Personal angling tracker",
@@ -271,6 +272,7 @@ const I18N = {
         "nav.register": "Regisztráció",
         "nav.guest": "Vendég",
         "common.close": "Bezárás",
+        "common.changeBg": "Háttér változtatása",
         "nav.lang": "Nyelv",
         "nav.weight": "Súly",
         "index.kicker": "Személyes horgász nyilvántartó",
@@ -582,7 +584,7 @@ function renderNav(user) {
             `<a href="add-catch.html">${t("nav.addExperience")}</a>`,
             `<a href="my-cathches.html">${t("nav.logbook")}</a>`,
             `<a href="places.html">${t("nav.places")}</a>`,
-            `<button type="button" class="btn-link" id="changeBgBtn">Change background</button>`,
+            `<button type="button" class="btn-link" id="changeBgBtn">${t("common.changeBg")}</button>`,
             `<button type="button" class="btn-link" id="logoutBtn">${t("nav.logout")}</button>`
         ].join("");
 
@@ -602,7 +604,7 @@ function renderNav(user) {
             `<a href="index.html">${t("nav.home")}</a>`,
             `<a href="login.html">${t("nav.login")}</a>`,
             `<a href="register.html">${t("nav.register")}</a>`,
-            `<button type="button" class="btn-link" id="changeBgBtn">Change background</button>`
+            `<button type="button" class="btn-link" id="changeBgBtn">${t("common.changeBg")}</button>`
         ].join("");
     }
 
