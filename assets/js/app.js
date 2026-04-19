@@ -288,6 +288,9 @@ const I18N = {
         "add.weatherPh": "Sunny, cloudy, windy...",
         "add.baits": "Baits used",
         "add.baitsPh": "Bait type, brand, color...",
+        "add.saving": "Saving...",
+        "add.savedAndReload": "Saved. Refreshing the page...",
+        "add.saveFailed": "Saving failed. Please try again.",
         "add.fishDetails": "Fish details (type + weight)",
         "add.addFishRow": "Add fish row",
         "add.uploadPhotos": "Upload photos",
@@ -307,6 +310,8 @@ const I18N = {
         "logbook.dateTo": "Date to",
         "logbook.place": "Place",
         "logbook.placePh": "Example: Lake Balaton",
+        "logbook.fishType": "Fish type",
+        "logbook.fishTypePh": "Carp, Pike...",
         "logbook.fishMin": "Min fish count",
         "logbook.fishMax": "Max fish count",
         "logbook.weightMin": "Min fish weight",
@@ -329,6 +334,7 @@ const I18N = {
         "details.caughtCount": "Caught fish count",
         "details.waterTemp": "Water temperature",
         "details.weather": "Weather",
+        "details.baits": "Baits used",
         "details.largest": "Largest fish",
         "details.fishList": "Fish list",
         "details.photos": "Photos",
@@ -459,6 +465,9 @@ const I18N = {
         "add.weatherPh": "Napos, felhős, szeles...",
         "add.baits": "Használt csalik",
         "add.baitsPh": "Csali típus, márka, szín...",
+        "add.saving": "Mentés folyamatban...",
+        "add.savedAndReload": "Adatok mentve. Oldal frissítése...",
+        "add.saveFailed": "A mentés nem sikerült. Próbáld újra.",
         "add.fishDetails": "Hal adatok (típus + súly)",
         "add.addFishRow": "Hal sor hozzáadása",
         "add.uploadPhotos": "Fotók feltöltése",
@@ -478,6 +487,8 @@ const I18N = {
         "logbook.dateTo": "Dátumig",
         "logbook.place": "Helyszín",
         "logbook.placePh": "Példa: Balaton",
+        "logbook.fishType": "Hal típusa",
+        "logbook.fishTypePh": "Ponty, csuka...",
         "logbook.fishMin": "Minimum halszám",
         "logbook.fishMax": "Maximum halszám",
         "logbook.weightMin": "Minimum hal súly",
@@ -500,6 +511,7 @@ const I18N = {
         "details.caughtCount": "Kifogott halak száma",
         "details.waterTemp": "Víz hőmérséklet",
         "details.weather": "Időjárás",
+        "details.baits": "Használt csalik",
         "details.largest": "Legnagyobb hal",
         "details.fishList": "Halfaj lista",
         "details.photos": "Fotók",
@@ -1372,37 +1384,57 @@ async function initAddCatch(user) {
             setMessage(msg, t("add.tooManyImages", { fallback: `You can upload up to ${MAX_IMAGES} images per experience.` }), false);
             return;
         }
-        const imageData = await saveImages(selectedImages, user.id, catchId);
-        const fishCount = Number(data.get("fishCount") || 0);
-        const waterTemp = parseOptionalNumber(data.get("waterTemp"));
-        const weather = String(data.get("weather") || "").trim();
+        const submitBtn = form.querySelector('button[type="submit"]');
+        if (submitBtn instanceof HTMLButtonElement) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = t("add.saving");
+        }
 
-        const newCatch = {
-            id: catchId,
-            userId: user.id,
-            date: String(data.get("catchDate") || "").trim(),
-            placeName,
-            placeLink,
-            mapsLink,
-            fishCount,
-            waterTemp,
-            weather,
-            fishItems,
-            imageData,
-            notes: String(data.get("notes") || "").trim(),
-            createdAt: new Date().toISOString()
-        };
+        try {
+            const imageData = await saveImages(selectedImages, user.id, catchId);
+            const fishCount = Number(data.get("fishCount") || 0);
+            const waterTemp = parseOptionalNumber(data.get("waterTemp"));
+            const weather = String(data.get("weather") || "").trim();
+            const baits = String(data.get("baits") || "").trim();
 
-        await saveCatch(newCatch);
+            const newCatch = {
+                id: catchId,
+                userId: user.id,
+                date: String(data.get("catchDate") || "").trim(),
+                placeName,
+                placeLink,
+                mapsLink,
+                fishCount,
+                waterTemp,
+                weather,
+                baits,
+                fishItems,
+                imageData,
+                notes: String(data.get("notes") || "").trim(),
+                createdAt: new Date().toISOString()
+            };
 
-        setMessage(msg, t("add.saved"), true);
-        form.reset();
-        dateInput.value = new Date().toISOString().slice(0, 10);
-        fishRows.innerHTML = "";
-        addFishRow(fishRows);
-        addFishRow(fishRows);
-        imagePreview.innerHTML = "";
-        selectedImages = [];
+            await saveCatch(newCatch);
+
+            setMessage(msg, t("add.savedAndReload"), true);
+            form.reset();
+            dateInput.value = new Date().toISOString().slice(0, 10);
+            fishRows.innerHTML = "";
+            addFishRow(fishRows);
+            addFishRow(fishRows);
+            imagePreview.innerHTML = "";
+            selectedImages = [];
+            setTimeout(() => {
+                window.location.reload();
+            }, 800);
+        } catch {
+            setMessage(msg, t("add.saveFailed"), false);
+        } finally {
+            if (submitBtn instanceof HTMLButtonElement) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = t("add.save");
+            }
+        }
     });
 }
 
@@ -1439,6 +1471,7 @@ async function initLogbook(user) {
         }
 
         modalContent.innerHTML = renderCatchDetailsMarkup(selected);
+        wirePhotoViewer(modalContent);
         modal.hidden = false;
     };
 
@@ -1509,21 +1542,67 @@ async function initCatchDetails(user) {
         return;
     }
 
-    const id = new URLSearchParams(window.location.search).get("id");
-    if (!id) {
-        container.innerHTML = `<p class="message error">${t("details.missingId")}</p>`;
-        return;
-    }
-
     const catches = await getUserCatches(user.id);
-    const selected = catches.find((item) => item.id === id);
-
-    if (!selected) {
-        container.innerHTML = `<p class="message error">${t("details.notFound")}</p>`;
+    if (catches.length === 0) {
+        container.innerHTML = `<p class="message error">${t("logbook.noMatch")}</p>`;
         return;
     }
 
-    container.innerHTML = renderCatchDetailsMarkup(selected);
+    const requestedId = new URLSearchParams(window.location.search).get("id") || "";
+    let activeId = requestedId && catches.some((item) => item.id === requestedId)
+        ? requestedId
+        : catches[0].id;
+
+    container.innerHTML = [
+        '<div id="catchCardCarousel" class="catch-carousel"></div>',
+        '<section class="card catch-preview-card" id="catchPreviewPanel"></section>'
+    ].join("");
+
+    const carousel = document.getElementById("catchCardCarousel");
+    const preview = document.getElementById("catchPreviewPanel");
+    if (!carousel || !preview) {
+        return;
+    }
+
+    const renderSelected = () => {
+        const selected = catches.find((item) => item.id === activeId) || catches[0];
+        activeId = selected.id;
+
+        carousel.innerHTML = catches.map((item) => {
+            const place = getPrimaryPlaceLabel(item);
+            const largest = getLargestWeight(item);
+            const activeClass = item.id === activeId ? " active" : "";
+            return [
+                `<button type="button" class="carousel-catch-card${activeClass}" data-catch-id="${escapeAttr(item.id)}">`,
+                `<strong>${escapeHtml(place || t("common.unknownPlace"))}</strong>`,
+                `<span>${t("common.date")}: ${escapeHtml(item.date || "-")}</span>`,
+                `<span>${t("common.largestFish")}: ${formatWeight(largest)}</span>`,
+                `</button>`
+            ].join("");
+        }).join("");
+
+        preview.innerHTML = renderCatchDetailsMarkup(selected);
+        wirePhotoViewer(preview);
+    };
+
+    carousel.addEventListener("click", (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLElement)) {
+            return;
+        }
+        const btn = target.closest(".carousel-catch-card");
+        if (!btn) {
+            return;
+        }
+        const nextId = btn.getAttribute("data-catch-id") || "";
+        if (!nextId) {
+            return;
+        }
+        activeId = nextId;
+        renderSelected();
+    });
+
+    renderSelected();
 }
 
 function renderCatchDetailsMarkup(selected) {
@@ -1544,7 +1623,14 @@ function renderCatchDetailsMarkup(selected) {
 
     const imagesArray = Array.isArray(selected.imageData) ? selected.imageData : [];
     const images = imagesArray.length
-        ? imagesArray.map((src) => `<img src="${src}" alt="Catch photo" class="thumb">`).join("")
+        ? [
+            `<div class="photo-viewer" data-photo-viewer="1">`,
+            `<img src="${escapeAttr(imagesArray[0])}" alt="Catch photo" class="photo-main" data-photo-main="1">`,
+            `<div class="photo-thumbs">`,
+            imagesArray.map((src, index) => `<button type="button" class="photo-thumb-btn${index === 0 ? " active" : ""}" data-photo-src="${escapeAttr(src)}"><img src="${escapeAttr(src)}" alt="Catch photo ${index + 1}" class="thumb"></button>`).join(""),
+            `</div>`,
+            `</div>`
+        ].join("")
         : `<p>${t("details.noPhotos")}</p>`;
 
     return [
@@ -1556,6 +1642,7 @@ function renderCatchDetailsMarkup(selected) {
         `<p><strong>${t("details.caughtCount")}:</strong> ${selected.fishCount}</p>`,
         `<p><strong>${t("details.waterTemp")}:</strong> ${selected.waterTemp === null || selected.waterTemp === undefined ? "-" : `${toFixed(selected.waterTemp)} ${String.fromCharCode(176)}C`}</p>`,
         `<p><strong>${t("details.weather")}:</strong> ${escapeHtml(selected.weather || "-")}</p>`,
+        `<p><strong>${t("details.baits")}:</strong> ${escapeHtml(selected.baits || "-")}</p>`,
         `<p><strong>${t("details.largest")}:</strong> ${formatWeight(getLargestWeight(selected))}</p>`,
         `</div>`,
         `<h2>${t("details.fishList")}</h2>`,
@@ -1565,6 +1652,51 @@ function renderCatchDetailsMarkup(selected) {
         `<h2>${t("details.notes")}</h2>`,
         `<p>${escapeHtml(selected.notes || t("details.noNotes"))}</p>`
     ].join("");
+}
+
+function wirePhotoViewer(root) {
+    if (!root) {
+        return;
+    }
+
+    if (root.dataset.photoViewerBound === "1") {
+        return;
+    }
+
+    root.dataset.photoViewerBound = "1";
+
+    root.addEventListener("click", (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLElement)) {
+            return;
+        }
+
+        const btn = target.closest(".photo-thumb-btn");
+        if (!btn) {
+            return;
+        }
+
+        const viewer = btn.closest("[data-photo-viewer='1']");
+        if (!viewer) {
+            return;
+        }
+
+        const main = viewer.querySelector("[data-photo-main='1']");
+        if (!(main instanceof HTMLImageElement)) {
+            return;
+        }
+
+        const nextSrc = btn.getAttribute("data-photo-src") || "";
+        if (!nextSrc) {
+            return;
+        }
+
+        main.src = nextSrc;
+
+        const thumbButtons = viewer.querySelectorAll(".photo-thumb-btn");
+        thumbButtons.forEach((el) => el.classList.remove("active"));
+        btn.classList.add("active");
+    });
 }
 
 async function initPlaces(user) {
@@ -1799,6 +1931,7 @@ function filterCatches(catches, formData) {
     const dateFrom = String(formData.get("dateFrom") || "").trim();
     const dateTo = String(formData.get("dateTo") || "").trim();
     const place = String(formData.get("place") || "").trim().toLowerCase();
+    const fishType = String(formData.get("fishType") || "").trim().toLowerCase();
     const fishMin = parseOptionalNumber(formData.get("fishMin"));
     const fishMax = parseOptionalNumber(formData.get("fishMax"));
     const weightMin = normalizeInputWeight(parseOptionalNumber(formData.get("weightMin")));
@@ -1808,6 +1941,9 @@ function filterCatches(catches, formData) {
         const itemDate = item.date || "";
         const itemPlaceText = `${item.placeName || ""} ${item.placeLink || ""} ${item.mapsLink || ""} ${getPrimaryPlaceLabel(item)}`.toLowerCase();
         const largest = getLargestWeight(item);
+        const fishText = Array.isArray(item.fishItems)
+            ? item.fishItems.map((fish) => String(fish.type || "").toLowerCase()).join(" ")
+            : "";
 
         if (dateFrom && itemDate < dateFrom) {
             return false;
@@ -1818,6 +1954,10 @@ function filterCatches(catches, formData) {
         }
 
         if (place && !itemPlaceText.includes(place)) {
+            return false;
+        }
+
+        if (fishType && !fishText.includes(fishType)) {
             return false;
         }
 
@@ -2190,6 +2330,7 @@ function applyPageTranslations(page, user) {
             setText('label[for="filterDateFrom"]', t("logbook.dateFrom"));
             setText('label[for="filterDateTo"]', t("logbook.dateTo"));
             setText('label[for="filterPlace"]', t("logbook.place"));
+            setText('label[for="filterFishType"]', t("logbook.fishType"));
             setText('label[for="filterFishMin"]', t("logbook.fishMin"));
             setText('label[for="filterFishMax"]', t("logbook.fishMax"));
             setText('label[for="filterWeightMin"]', `${t("logbook.weightMin")} (${t(`unit.${currentWeightUnit}`)})`);
@@ -2200,6 +2341,7 @@ function applyPageTranslations(page, user) {
             setText("#logbookDetailTitle", t("details.title"));
             setText("#closeLogbookDetails", t("common.close"));
             setPlaceholder("#filterPlace", t("logbook.placePh"));
+            setPlaceholder("#filterFishType", t("logbook.fishTypePh"));
             break;
         case "catch-details":
             document.title = `${t("details.title")} | Fishing Logbook`;

@@ -675,6 +675,12 @@ select:focus {
 	cursor: pointer;
 }
 
+.list-item[data-catch-id]:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 10px 24px rgba(37, 49, 29, 0.22);
+	border-color: rgba(70, 110, 56, 0.45);
+}
+
 .fine-print {
 	font-size: 0.9rem;
 	color: var(--muted);
@@ -744,6 +750,72 @@ select:focus {
 	border: 1px solid var(--line);
 }
 
+.photo-viewer {
+	display: grid;
+	gap: 0.6rem;
+}
+
+.photo-main {
+	width: 100%;
+	height: min(48vh, 420px);
+	object-fit: cover;
+	border-radius: 12px;
+	border: 1px solid var(--line);
+	background: rgba(255, 255, 255, 0.22);
+}
+
+.photo-thumbs {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+	gap: 0.45rem;
+}
+
+.photo-thumb-btn {
+	border: 1px solid rgba(72, 93, 54, 0.3);
+	padding: 0.15rem;
+	border-radius: 10px;
+	background: rgba(255, 255, 255, 0.2);
+	cursor: pointer;
+}
+
+.photo-thumb-btn.active {
+	border-color: rgba(49, 93, 41, 0.76);
+	box-shadow: 0 0 0 2px rgba(113, 170, 72, 0.24);
+}
+
+.catch-carousel {
+	display: flex;
+	gap: 0.55rem;
+	overflow-x: auto;
+	padding: 0.2rem 0.1rem 0.55rem;
+	scroll-snap-type: x mandatory;
+	margin-bottom: 0.6rem;
+}
+
+.carousel-catch-card {
+	min-width: 220px;
+	max-width: 260px;
+	flex: 0 0 auto;
+	display: grid;
+	gap: 0.3rem;
+	padding: 0.65rem 0.75rem;
+	border-radius: 12px;
+	border: 1px solid rgba(80, 100, 58, 0.32);
+	background: linear-gradient(160deg, #cec4aa, #bdb496);
+	text-align: left;
+	cursor: pointer;
+	scroll-snap-align: start;
+}
+
+.carousel-catch-card.active {
+	border-color: rgba(47, 88, 38, 0.7);
+	box-shadow: 0 0 0 2px rgba(84, 150, 61, 0.24);
+}
+
+.catch-preview-card {
+	margin-top: 0.4rem;
+}
+
 .place-layout {
 	grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -796,6 +868,20 @@ select:focus {
 
 	.filter-grid {
 		grid-template-columns: repeat(2, minmax(0, 1fr));
+
+	#logbookList.list-grid {
+		display: flex;
+		overflow-x: auto;
+		gap: 0.6rem;
+		scroll-snap-type: x mandatory;
+		padding-bottom: 0.2rem;
+	}
+
+	#logbookList .list-item {
+		min-width: min(84vw, 290px);
+		flex: 0 0 auto;
+		scroll-snap-align: start;
+	}
 	}
 
 	.place-layout {
