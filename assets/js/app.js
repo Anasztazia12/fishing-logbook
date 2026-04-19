@@ -776,10 +776,12 @@ function renderNav(user) {
         return;
     }
 
+    const page = String(document.body?.dataset?.page || "");
+    const forcePublicNav = PUBLIC_PAGES.has(page);
     const effectiveUser = isUserSessionActive(user) ? user : null;
 
     let navHtml = "";
-    if (effectiveUser) {
+    if (!forcePublicNav && effectiveUser) {
         const guestLabel = effectiveUser.isGuest ? ` (${t("nav.guest")})` : "";
         navHtml = [
             `<a href="index.html">${t("nav.startScreen")}</a>`,
@@ -801,7 +803,7 @@ function renderNav(user) {
     }
     nav.innerHTML = navHtml;
 
-    if (effectiveUser) {
+    if (!forcePublicNav && effectiveUser) {
         const logout = document.getElementById("logoutBtn");
         const deleteAccountBtn = document.getElementById("deleteAccountBtn");
         if (logout) {
