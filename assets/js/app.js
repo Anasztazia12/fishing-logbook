@@ -352,6 +352,11 @@ const I18N = {
         "details.editWeather": "Weather",
         "details.editBaits": "Baits used",
         "details.editNotes": "Notes",
+        "details.editImages": "Manage photos",
+        "details.removePhoto": "Remove",
+        "details.addMorePhotos": "Add more photos",
+        "details.photosUpdated": "Photo changes saved.",
+        "details.noPhotosLeft": "No photos left.",
         "details.largest": "Largest fish",
         "details.fishList": "Fish list",
         "details.photos": "Photos",
@@ -546,6 +551,11 @@ const I18N = {
         "details.editWeather": "Időjárás",
         "details.editBaits": "Használt csalik",
         "details.editNotes": "Jegyzet",
+        "details.editImages": "Képek kezelése",
+        "details.removePhoto": "Törlés",
+        "details.addMorePhotos": "További képek",
+        "details.photosUpdated": "Képmódosítások mentve.",
+        "details.noPhotosLeft": "Nincs már kép.",
         "details.largest": "Legnagyobb hal",
         "details.fishList": "Halfaj lista",
         "details.photos": "Fotók",
@@ -1417,7 +1427,7 @@ async function initAddCatch(user) {
 
     const updatePreview = () => {
         // Frissíti az előnézetet a selectedImages alapján
-        renderImagePreviews(selectedImages, imagePreview);
+        renderImagePreviews(selectedImages, imagePreview, true);
         if (selectedImages.length > MAX_IMAGES) {
             setMessage(msg, t("add.tooManyImages", { fallback: `You can upload up to ${MAX_IMAGES} images per experience.` }), false);
         } else {
@@ -1439,6 +1449,27 @@ async function initAddCatch(user) {
 
     imageInput.addEventListener("change", () => handleFileInput(imageInput));
     cameraInput.addEventListener("change", () => handleFileInput(cameraInput));
+
+    imagePreview.addEventListener("click", (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLElement)) {
+            return;
+        }
+
+        const btn = target.closest(".preview-remove-btn");
+        if (!btn) {
+            return;
+        }
+
+        const idxRaw = btn.getAttribute("data-preview-index") || "-1";
+        const idx = Number(idxRaw);
+        if (!Number.isInteger(idx) || idx < 0 || idx >= selectedImages.length) {
+            return;
+        }
+
+        selectedImages.splice(idx, 1);
+        updatePreview();
+    });
 
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
@@ -1507,8 +1538,9 @@ async function initAddCatch(user) {
             setTimeout(() => {
                 window.location.reload();
             }, 800);
-        } catch {
-            setMessage(msg, t("add.saveFailed"), false);
+        } catch (error) {
+            console.error("Catch save failed", error);
+            setMessage(msg, parseSaveError(error), false);
         } finally {
             if (submitBtn instanceof HTMLButtonElement) {
                 submitBtn.disabled = false;
@@ -1646,6 +1678,23 @@ async function initLogbook(user) {
             render();
             closeDetailsModal();
             window.alert(t("details.deleted"));
+        },
+        onEditImages: async (catchId) => {
+            const selected = catches.find((item) => item.id === catchId);
+            if (!selected) {
+                return;
+            }
+
+            const updated = await editCatchImages(selected);
+            if (!updated) {
+                return;
+            }
+
+            await updateCatchRecord(updated);
+            await refreshCatches();
+            render();
+            openDetailsModal(updated.id);
+            window.alert(t("details.photosUpdated"));
         }
     });
 
@@ -1773,6 +1822,23 @@ async function initCatchDetails(user) {
             activeId = catches[0].id;
             renderSelected();
             window.alert(t("details.deleted"));
+        },
+        onEditImages: async (catchId) => {
+            const selected = catches.find((item) => item.id === catchId);
+            if (!selected) {
+                return;
+            }
+
+            const updated = await editCatchImages(selected);
+            if (!updated) {
+                return;
+            }
+
+            await updateCatchRecord(updated);
+            await refreshCatches();
+            activeId = updated.id;
+            renderSelected();
+            window.alert(t("details.photosUpdated"));
         }
     });
 
@@ -1810,6 +1876,7 @@ function renderCatchDetailsMarkup(selected) {
     return [
         `<div class="detail-actions">`,
         `<button type="button" class="btn btn-primary detail-action" data-catch-action="edit" data-catch-id="${escapeAttr(selected.id)}">${t("details.edit")}</button>`,
+        `<button type="button" class="btn btn-secondary detail-action" data-catch-action="edit-images" data-catch-id="${escapeAttr(selected.id)}">${t("details.editImages")}</button>`,
         `<button type="button" class="btn btn-danger detail-action" data-catch-action="delete" data-catch-id="${escapeAttr(selected.id)}">${t("details.delete")}</button>`,
         `</div>`,
         `<div class="detail-grid">`,
@@ -1907,6 +1974,11 @@ function wireDetailActions(root, handlers) {
 
         if (action === "edit") {
             void handlers?.onEdit?.(catchId);
+            return;
+        }
+
+        if (action === "edit-images") {
+            void handlers?.onEditImages?.(catchId);
             return;
         }
 
@@ -2058,7 +2130,8 @@ async function saveCatch(catchRecord) {
                 "Cloud catch save timed out."
             );
             return;
-        } catch {
+        } catch (error) {
+            console.warn("Cloud catch save failed, using local fallback.", error);
             // Falls back to local storage if cloud write hangs/fails.
         }
     }
@@ -2079,7 +2152,8 @@ async function updateCatchRecord(catchRecord) {
                 12000,
                 "Cloud catch update timed out."
             );
-        } catch {
+        } catch (error) {
+            console.warn("Cloud catch update failed, using local fallback.", error);
             // Falls back to local update.
         }
     }
@@ -2105,7 +2179,8 @@ async function deleteCatchRecord(catchId, userId) {
                 12000,
                 "Cloud catch delete timed out."
             );
-        } catch {
+        } catch (error) {
+            console.warn("Cloud catch delete failed, using local fallback.", error);
             // Falls through to local delete.
         }
     }
@@ -2181,7 +2256,8 @@ async function saveImages(files, userId, catchId) {
             });
 
             return await withTimeout(Promise.all(uploads), 20000, "Cloud image upload batch timed out.");
-        } catch {
+        } catch (error) {
+            console.warn("Cloud image upload failed, using local base64 fallback.", error);
             // Falls through to local base64 save.
         }
     }
@@ -2396,6 +2472,26 @@ function parseFirebaseError(error, fallback) {
         default:
             return fallback;
     }
+}
+
+function parseSaveError(error) {
+    const message = String(error?.message || "").toLowerCase();
+    const code = String(error?.code || "").toLowerCase();
+    const name = String(error?.name || "").toLowerCase();
+
+    if (name.includes("quota") || code.includes("quota") || message.includes("quota")) {
+        return "Save failed: local storage is full (usually too many/too large images in offline fallback). Delete older catches or upload fewer images.";
+    }
+
+    if (code.includes("permission-denied") || message.includes("missing or insufficient permissions")) {
+        return "Save failed: Firebase permission issue. Check Firestore/Storage security rules.";
+    }
+
+    if (code.includes("unavailable") || code.includes("deadline-exceeded") || message.includes("timed out") || message.includes("network") || message.includes("offline")) {
+        return "Save failed: network is unstable or too slow. Try again with a stronger connection.";
+    }
+
+    return t("add.saveFailed");
 }
 
 function isValidEmail(email) {
