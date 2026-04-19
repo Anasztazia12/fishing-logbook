@@ -261,6 +261,8 @@ const I18N = {
         "register.already": "Already registered?",
         "register.login": "Login",
         "dashboard.welcome": "Welcome, {name}",
+        "dashboard.guestWelcome": "Guest mode active",
+        "dashboard.guestHint": "This is an info banner. Use the cards below to choose an action.",
         "dashboard.choose": "Choose what you want to manage in your fishing diary.",
         "dashboard.card.addTitle": "Add New Fishing Experience",
         "dashboard.card.addText": "Log location, fish details, photos and notes.",
@@ -441,6 +443,8 @@ const I18N = {
         "register.already": "Már regisztráltál?",
         "register.login": "Belépés",
         "dashboard.welcome": "Üdvözöllek, {name}",
+        "dashboard.guestWelcome": "Vendég mód aktív",
+        "dashboard.guestHint": "Ez egy tájékoztató sáv. Választani az alábbi kártyákból tudsz.",
         "dashboard.choose": "Válaszd ki, mit szeretnél kezelni a horgásznaplódban.",
         "dashboard.card.addTitle": "Új horgászati élmény",
         "dashboard.card.addText": "Rögzítsd a helyszínt, hal adatokat, fotókat és jegyzetet.",
@@ -1299,10 +1303,21 @@ async function initDashboard(user) {
     }
 
     const welcome = document.getElementById("welcomeTitle");
+    const introCard = document.querySelector(".intro-card");
+    const introHint = document.querySelector(".intro-card p");
     const recent = document.getElementById("recentCatches");
 
     if (welcome) {
-        welcome.textContent = t("dashboard.welcome", { name: user.username });
+        if (user.isGuest) {
+            welcome.textContent = t("dashboard.guestWelcome");
+            introCard?.classList.add("guest-banner");
+            if (introHint) {
+                introHint.textContent = t("dashboard.guestHint");
+            }
+        } else {
+            welcome.textContent = t("dashboard.welcome", { name: user.username });
+            introCard?.classList.remove("guest-banner");
+        }
     }
 
     if (!recent) {

@@ -507,6 +507,30 @@ body {
 		linear-gradient(132deg, #d9ccb0, #c4cdab 58%, #b8a384);
 }
 
+.intro-card.guest-banner {
+	border: 2px solid rgba(184, 120, 32, 0.5);
+	background:
+		radial-gradient(circle at 8% 20%, rgba(215, 160, 44, 0.25) 0 12%, transparent 13%),
+		linear-gradient(135deg, #e2d3b0, #d4c190 55%, #c6ad79);
+	box-shadow: 0 12px 28px rgba(112, 78, 24, 0.22);
+	position: relative;
+}
+
+.intro-card.guest-banner::before {
+	content: "Info";
+	position: absolute;
+	top: -10px;
+	right: 12px;
+	padding: 0.18rem 0.55rem;
+	border-radius: 999px;
+	font-size: 0.72rem;
+	font-weight: 800;
+	letter-spacing: 0.04em;
+	background: #7a4e2b;
+	color: #fff8ef;
+	border: 1px solid rgba(255, 235, 194, 0.45);
+}
+
 .dashboard-grid {
 	display: grid;
 	grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -987,6 +1011,12 @@ select:focus {
 	.detail-grid,
 	.fish-row {
 		grid-template-columns: 1fr;
+	}
+
+	/* On small phones keep dashboard concise: Places/Caught are already in hamburger. */
+	.dashboard-grid .nav-card:nth-child(3),
+	.dashboard-grid .nav-card:nth-child(4) {
+		display: none;
 	}
 
 	.card-head {
