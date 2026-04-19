@@ -554,6 +554,10 @@ select:focus {
 	margin-bottom: 0.45rem;
 }
 
+.list-item[data-catch-id] {
+	cursor: pointer;
+}
+
 .fine-print {
 	font-size: 0.9rem;
 	color: var(--muted);

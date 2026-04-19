@@ -53,6 +53,16 @@
             </div>
             <div id="logbookList" class="list-grid"></div>
         </section>
+
+        <div id="logbookDetailsModal" class="reset-modal-overlay" hidden>
+            <section class="card reset-modal-card" role="dialog" aria-modal="true" aria-labelledby="logbookDetailTitle">
+                <div class="card-head">
+                    <h2 id="logbookDetailTitle">Catch details</h2>
+                    <button type="button" id="closeLogbookDetails" class="btn btn-secondary">Close</button>
+                </div>
+                <div id="logbookDetailsContent"></div>
+            </section>
+        </div>
     </main>
 
     <script src="assets/js/app.js" defer></script>

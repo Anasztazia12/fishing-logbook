@@ -1084,8 +1084,11 @@ async function initLogbook(user) {
     const clearBtn = document.getElementById("clearFilters");
     const container = document.getElementById("logbookList");
     const count = document.getElementById("resultCount");
+    const modal = document.getElementById("logbookDetailsModal");
+    const modalContent = document.getElementById("logbookDetailsContent");
+    const closeModalBtn = document.getElementById("closeLogbookDetails");
 
-    if (!form || !clearBtn || !container || !count) {
+    if (!form || !clearBtn || !container || !count || !modal || !modalContent || !closeModalBtn) {
         return;
     }
 
@@ -1098,6 +1101,20 @@ async function initLogbook(user) {
     }
 
     const catches = await getUserCatches(user.id);
+
+    const openDetailsModal = (catchId) => {
+        const selected = catches.find((item) => item.id === catchId);
+        if (!selected) {
+            return;
+        }
+
+        modalContent.innerHTML = renderCatchDetailsMarkup(selected);
+        modal.hidden = false;
+    };
+
+    const closeDetailsModal = () => {
+        modal.hidden = true;
+    };
 
     const render = () => {
         const filtered = filterCatches(catches, new FormData(form));
@@ -1120,6 +1137,33 @@ async function initLogbook(user) {
     clearBtn.addEventListener("click", () => {
         form.reset();
         render();
+    });
+
+    container.addEventListener("click", (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLElement)) {
+            return;
+        }
+
+        const article = target.closest(".list-item[data-catch-id]");
+        if (!article) {
+            return;
+        }
+
+        const catchId = article.getAttribute("data-catch-id") || "";
+        if (!catchId) {
+            return;
+        }
+
+        event.preventDefault();
+        openDetailsModal(catchId);
+    });
+
+    closeModalBtn.addEventListener("click", closeDetailsModal);
+    modal.addEventListener("click", (event) => {
+        if (event.target === modal) {
+            closeDetailsModal();
+        }
     });
 
     render();
@@ -1149,6 +1193,10 @@ async function initCatchDetails(user) {
         return;
     }
 
+    container.innerHTML = renderCatchDetailsMarkup(selected);
+}
+
+function renderCatchDetailsMarkup(selected) {
     const placeName = selected.placeName
         ? escapeHtml(selected.placeName)
         : "-";
@@ -1159,17 +1207,19 @@ async function initCatchDetails(user) {
         ? `<a href="${escapeHtml(selected.mapsLink)}" target="_blank" rel="noopener">${t("details.openMap")}</a>`
         : "-";
 
-    const fishRows = selected.fishItems
+    const fishItems = Array.isArray(selected.fishItems) ? selected.fishItems : [];
+    const fishRows = fishItems
         .map((fish) => `<tr><td>${escapeHtml(fish.type)}</td><td>${formatWeight(fish.weight)}</td></tr>`)
         .join("");
 
-    const images = selected.imageData.length
-        ? selected.imageData.map((src) => `<img src="${src}" alt="Catch photo" class="thumb">`).join("")
+    const imagesArray = Array.isArray(selected.imageData) ? selected.imageData : [];
+    const images = imagesArray.length
+        ? imagesArray.map((src) => `<img src="${src}" alt="Catch photo" class="thumb">`).join("")
         : `<p>${t("details.noPhotos")}</p>`;
 
-    container.innerHTML = [
+    return [
         `<div class="detail-grid">`,
-        `<p><strong>${t("details.date")}:</strong> ${escapeHtml(selected.date)}</p>`,
+        `<p><strong>${t("details.date")}:</strong> ${escapeHtml(selected.date || "-")}</p>`,
         `<p><strong>${t("details.placeName")}:</strong> ${placeName}</p>`,
         `<p><strong>${t("details.placeLink")}:</strong> ${placeLink}</p>`,
         `<p><strong>${t("details.mapsLink")}:</strong> ${mapsLink}</p>`,
@@ -1467,12 +1517,12 @@ function renderCatchCard(item, compact) {
     const largest = getLargestWeight(item);
 
     return [
-        '<article class="list-item">',
+        `<article class="list-item" data-catch-id="${escapeAttr(item.id)}">`,
         `<h3>${escapeHtml(place || t("common.unknownPlace"))}</h3>`,
         `<p>${t("common.date")}: ${escapeHtml(item.date || "-")}</p>`,
         `<p>${t("common.caughtFish")}: ${item.fishCount}</p>`,
         `<p>${t("common.largestFish")}: ${formatWeight(largest)}</p>`,
-        compact ? "" : `<a class="btn btn-secondary" href="catch-details.html?id=${encodeURIComponent(item.id)}">${t("common.openDetails")}</a>`,
+        compact ? "" : `<a class="btn btn-secondary open-detail-link" href="catch-details.html?id=${encodeURIComponent(item.id)}">${t("common.openDetails")}</a>`,
         '</article>'
     ].join("");
 }
@@ -1819,6 +1869,8 @@ function applyPageTranslations(page, user) {
             setText('#filterForm button[type="submit"]', t("logbook.apply"));
             setText("#clearFilters", t("logbook.clear"));
             setText(".card-head h2", t("logbook.results"));
+            setText("#logbookDetailTitle", t("details.title"));
+            setText("#closeLogbookDetails", t("common.close"));
             setPlaceholder("#filterPlace", t("logbook.placePh"));
             break;
         case "catch-details":
