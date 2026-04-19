@@ -37,6 +37,20 @@
                     >
                     <button type="button" id="toggleRegisterPassword" class="password-toggle" aria-label="Show password" title="Show password">&#128065;</button>
                 </div>
+                <label for="registerPasswordAgain">Password again</label>
+                <div class="password-wrap">
+                    <input
+                        type="password"
+                        id="registerPasswordAgain"
+                        name="passwordAgain"
+                        minlength="8"
+                        maxlength="20"
+                        pattern="[A-Za-z0-9!@#$%^&*()_\-+=.?]+"
+                        title="Repeat your password."
+                        required
+                    >
+                    <button type="button" id="toggleRegisterPasswordAgain" class="password-toggle" aria-label="Show password" title="Show password">&#128065;</button>
+                </div>
                 <p id="registerPasswordHint" class="field-hint">Use 8-20 characters, at least 1 letter and 1 number. Allowed: A-Z a-z 0-9 ! @ # $ % ^ &amp; * ( ) _ - + = . ?</p>
 
                 <button type="submit" class="btn btn-primary">Create account</button>

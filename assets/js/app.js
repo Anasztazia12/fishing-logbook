@@ -1,3 +1,70 @@
+// Allowed backgrounds (exclude screenshots)
+const AVAILABLE_BACKGROUNDS = [
+    "background.png",
+    "background2.png",
+    "camouflage.png",
+    "carp.png",
+    "carp2.png",
+    "Carpbaits.png",
+    "fishing.png",
+    "fishing2.png",
+    "fishing3.png",
+    "fishing4.png",
+    "fishing5.png"
+];
+
+function openBgModal() {
+    let modal = document.getElementById("bgModal");
+    if (!modal) {
+        modal = document.createElement("div");
+        modal.id = "bgModal";
+        modal.className = "modal-overlay";
+        modal.innerHTML = `
+            <div class="modal-card">
+                <h2>${t("common.changeBg") || "Change Background"}</h2>
+                <div class="bg-options">
+                    ${AVAILABLE_BACKGROUNDS.map(img => `
+                        <button class="bg-thumb" data-img="${img}" style="background-image:url('assets/images/${img}')" title="${img}"></button>
+                    `).join("")}
+                </div>
+                <button class="btn btn-secondary" id="closeBgModal">${t("common.close") || "Close"}</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    } else {
+        modal.hidden = false;
+    }
+    modal.style.display = "flex";
+    modal.querySelectorAll(".bg-thumb").forEach(btn => {
+        btn.onclick = () => {
+            const img = btn.getAttribute("data-img");
+            setBackground(img);
+            closeBgModal();
+        };
+    });
+    document.getElementById("closeBgModal").onclick = closeBgModal;
+}
+
+function closeBgModal() {
+    const modal = document.getElementById("bgModal");
+    if (modal) modal.style.display = "none";
+}
+
+function setBackground(img) {
+    if (AVAILABLE_BACKGROUNDS.includes(img)) {
+        localStorage.setItem("flb_bg", img);
+        document.body.style.backgroundImage = `url('assets/images/${img}')`;
+    }
+}
+
+function applySavedBackground() {
+    const img = localStorage.getItem("flb_bg");
+    if (img && AVAILABLE_BACKGROUNDS.includes(img)) {
+        document.body.style.backgroundImage = `url('assets/images/${img}')`;
+    }
+}
+
+document.addEventListener("DOMContentLoaded", applySavedBackground);
 const STORAGE = {
     users: "flb_users",
     currentUser: "flb_current_user",
@@ -508,6 +575,7 @@ function renderNav(user) {
             `<a href="add-catch.html">${t("nav.addExperience")}</a>`,
             `<a href="my-cathches.html">${t("nav.logbook")}</a>`,
             `<a href="places.html">${t("nav.places")}</a>`,
+            `<button type="button" class="btn-link" id="changeBgBtn">${t("common.changeBg") || "Change Background"}</button>`,
             `<button type="button" class="btn-link" id="logoutBtn">${t("nav.logout")}</button>`
         ].join("");
 
@@ -526,11 +594,19 @@ function renderNav(user) {
         nav.innerHTML = [
             `<a href="index.html">${t("nav.home")}</a>`,
             `<a href="login.html">${t("nav.login")}</a>`,
-            `<a href="register.html">${t("nav.register")}</a>`
+            `<a href="register.html">${t("nav.register")}</a>`,
+            `<button type="button" class="btn-link" id="changeBgBtn">${t("common.changeBg") || "Change Background"}</button>`
         ].join("");
     }
 
     ensureMenuToggle(nav);
+        // Add event for background change button
+        setTimeout(() => {
+            const bgBtn = document.getElementById("changeBgBtn");
+            if (bgBtn) {
+                bgBtn.addEventListener("click", openBgModal);
+            }
+        }, 0);
     ensureTopbarLanguageSwitch();
 }
 
@@ -659,12 +735,15 @@ async function initRegister() {
     const msg = document.getElementById("registerMessage");
     const passwordInput = document.getElementById("registerPassword");
     const togglePasswordBtn = document.getElementById("toggleRegisterPassword");
+    const passwordAgainInput = document.getElementById("registerPasswordAgain");
+    const togglePasswordAgainBtn = document.getElementById("toggleRegisterPasswordAgain");
 
     if (!form || !msg) {
         return;
     }
 
     setupPasswordToggle(passwordInput, togglePasswordBtn, "register");
+    setupPasswordToggle(passwordAgainInput, togglePasswordAgainBtn, "register");
 
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
@@ -673,6 +752,7 @@ async function initRegister() {
         const username = String(formData.get("username") || "").trim();
         const email = String(formData.get("email") || "").trim().toLowerCase();
         const password = String(formData.get("password") || "").trim();
+        const passwordAgain = String(formData.get("passwordAgain") || "").trim();
 
         if (username.length < 3) {
             setMessage(msg, t("register.usernameRequired"), false);
@@ -686,6 +766,11 @@ async function initRegister() {
 
         if (!isValidPassword(password)) {
             setMessage(msg, t("register.passwordInvalid"), false);
+            return;
+        }
+
+        if (password !== passwordAgain) {
+            setMessage(msg, t("register.passwordsDontMatch", { fallback: "Passwords do not match." }), false);
             return;
         }
 
@@ -1790,12 +1875,18 @@ function applyPageTranslations(page, user) {
             setText('label[for="registerUsername"]', t("register.username"));
             setText('label[for="registerEmail"]', t("register.email"));
             setText('label[for="registerPassword"]', t("register.password"));
+            setText('label[for="registerPasswordAgain"]', t("register.passwordConfirm") || "Password again");
             setText("#registerPasswordHint", `${t("register.passwordHint")} ${t("register.passwordRules")}`);
             setText('#registerForm button[type="submit"]', t("register.button"));
             const registerToggleButton = document.getElementById("toggleRegisterPassword");
+            const registerToggleButtonAgain = document.getElementById("toggleRegisterPasswordAgain");
             if (registerToggleButton instanceof HTMLButtonElement) {
                 registerToggleButton.setAttribute("aria-label", t("register.showPassword"));
                 registerToggleButton.setAttribute("title", t("register.showPassword"));
+            }
+            if (registerToggleButtonAgain instanceof HTMLButtonElement) {
+                registerToggleButtonAgain.setAttribute("aria-label", t("register.showPassword"));
+                registerToggleButtonAgain.setAttribute("title", t("register.showPassword"));
             }
             const fine = document.querySelector(".auth-card .fine-print");
             if (fine) {
