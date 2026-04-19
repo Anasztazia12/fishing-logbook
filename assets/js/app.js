@@ -34,6 +34,7 @@ const firebaseState = {
 
 const PUBLIC_PAGES = new Set(["index", "login", "register"]);
 const SUPPORTED_LANGUAGES = new Set(["en", "hu"]);
+const PASSWORD_POLICY = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*()_\-+=.?]{8,20}$/;
 
 const I18N = {
     en: {
@@ -84,6 +85,15 @@ const I18N = {
         "register.usernameRequired": "Username must be at least 3 characters.",
         "register.email": "Email",
         "register.password": "Password",
+        "register.passwordHint": "Use 8-20 characters, with at least 1 letter and 1 number.",
+        "register.passwordRules": "Allowed characters: letters, numbers, and ! @ # $ % ^ & * ( ) _ - + = . ?",
+        "register.showPassword": "Show password",
+        "register.hidePassword": "Hide password",
+        "register.passwordInvalid": "Password must be 8-20 chars, include at least 1 letter and 1 number, and use only allowed symbols.",
+        "register.firebaseFallback": "Cloud registration is unavailable right now. Your account was created locally.",
+        "register.success": "Registration successful. Redirecting...",
+        "register.failed": "Registration failed.",
+        "register.weak": "Password is too weak.",
         "register.button": "Create account",
         "register.already": "Already registered?",
         "register.login": "Login",
@@ -226,6 +236,15 @@ const I18N = {
         "register.usernameRequired": "A felhasználónév legalább 3 karakter legyen.",
         "register.email": "Email",
         "register.password": "Jelszó",
+        "register.passwordHint": "8-20 karakter, legalább 1 betűvel és 1 számmal.",
+        "register.passwordRules": "Engedélyezett karakterek: betűk, számok, valamint ! @ # $ % ^ & * ( ) _ - + = . ?",
+        "register.showPassword": "Jelszó megjelenítése",
+        "register.hidePassword": "Jelszó elrejtése",
+        "register.passwordInvalid": "A jelszó legyen 8-20 karakter, legyen benne legalább 1 betű és 1 szám, és csak engedélyezett karaktereket használj.",
+        "register.firebaseFallback": "A felhős regisztráció most nem elérhető. A fiók helyben létrejött.",
+        "register.success": "Sikeres regisztráció. Átirányítás...",
+        "register.failed": "A regisztráció sikertelen.",
+        "register.weak": "A jelszó túl gyenge.",
         "register.button": "Fiók létrehozása",
         "register.already": "Már regisztráltál?",
         "register.login": "Belépés",
@@ -632,10 +651,14 @@ function startGuestSession() {
 async function initRegister() {
     const form = document.getElementById("registerForm");
     const msg = document.getElementById("registerMessage");
+    const passwordInput = document.getElementById("registerPassword");
+    const togglePasswordBtn = document.getElementById("toggleRegisterPassword");
 
     if (!form || !msg) {
         return;
     }
+
+    setupPasswordToggle(passwordInput, togglePasswordBtn, "register");
 
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
@@ -650,28 +673,14 @@ async function initRegister() {
             return;
         }
 
-        if (firebaseState.enabled && firebaseState.auth) {
-            try {
-                const credential = await firebaseState.auth.createUserWithEmailAndPassword(email, password);
-                if (credential.user) {
-                    await credential.user.updateProfile({ displayName: username });
-                    localStorage.setItem(STORAGE.currentUser, JSON.stringify({
-                        id: credential.user.uid,
-                        username: username || credential.user.email || "User",
-                        email: credential.user.email || email
-                    }));
-                }
+        if (!isValidEmail(email)) {
+            setMessage(msg, t("login.emailInvalid"), false);
+            return;
+        }
 
-                setMessage(msg, t("register.success", { fallback: "Registration successful. Redirecting..." }), true);
-                setTimeout(() => {
-                    window.location.href = "dashboard.html";
-                }, 600);
-                return;
-            } catch (error) {
-                const message = parseFirebaseError(error, t("register.failed", { fallback: "Registration failed." }));
-                setMessage(msg, message, false);
-                return;
-            }
+        if (!isValidPassword(password)) {
+            setMessage(msg, t("register.passwordInvalid"), false);
+            return;
         }
 
         const users = readStorage(STORAGE.users, []);
@@ -682,8 +691,34 @@ async function initRegister() {
             return;
         }
 
+        let firebaseUser = null;
+        let usedLocalFallback = false;
+
+        if (firebaseState.enabled && firebaseState.auth) {
+            try {
+                const credential = await firebaseState.auth.createUserWithEmailAndPassword(email, password);
+                if (credential.user) {
+                    await credential.user.updateProfile({ displayName: username });
+                    firebaseUser = credential.user;
+                }
+            } catch (error) {
+                const code = String(error?.code || "");
+                if (code === "auth/email-already-in-use") {
+                    setMessage(msg, t("register.alreadyExists", { fallback: "This email is already registered." }), false);
+                    return;
+                }
+
+                if (code === "auth/invalid-email" || code === "auth/weak-password") {
+                    setMessage(msg, parseFirebaseError(error, t("register.failed")), false);
+                    return;
+                }
+
+                usedLocalFallback = true;
+            }
+        }
+
         const newUser = {
-            id: crypto.randomUUID(),
+            id: firebaseUser?.uid || crypto.randomUUID(),
             username,
             email,
             password
@@ -691,9 +726,13 @@ async function initRegister() {
 
         users.push(newUser);
         writeStorage(STORAGE.users, users);
-        localStorage.setItem(STORAGE.currentUser, JSON.stringify({ id: newUser.id, username: newUser.username, email: newUser.email }));
+        localStorage.setItem(STORAGE.currentUser, JSON.stringify({
+            id: newUser.id,
+            username: newUser.username,
+            email: newUser.email
+        }));
 
-        setMessage(msg, t("register.success", { fallback: "Registration successful. Redirecting..." }), true);
+        setMessage(msg, usedLocalFallback ? t("register.firebaseFallback") : t("register.success"), true);
         setTimeout(() => {
             window.location.href = "dashboard.html";
         }, 600);
@@ -814,7 +853,7 @@ async function initLogin() {
             return;
         }
 
-        if (nextPassword.length < 4) {
+        if (!isValidPassword(nextPassword)) {
             setMessage(resetMsg, t("register.weak", { fallback: "Password is too weak." }), false);
             return;
         }
@@ -1437,6 +1476,10 @@ function parseFirebaseError(error, fallback) {
             return t("login.passwordWrong", { fallback: "Password is incorrect." });
         case "auth/invalid-credential":
             return t("login.badCredentials", { fallback: "Email or password is incorrect." });
+        case "auth/network-request-failed":
+            return t("register.firebaseFallback", { fallback: "Cloud registration is unavailable right now. Your account was created locally." });
+        case "auth/operation-not-allowed":
+            return t("register.firebaseFallback", { fallback: "Cloud registration is unavailable right now. Your account was created locally." });
         default:
             return fallback;
     }
@@ -1444,6 +1487,30 @@ function parseFirebaseError(error, fallback) {
 
 function isValidEmail(email) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || "").trim());
+}
+
+function isValidPassword(password) {
+    return PASSWORD_POLICY.test(String(password || "").trim());
+}
+
+function setupPasswordToggle(inputElement, toggleButton, translationPrefix) {
+    if (!(inputElement instanceof HTMLInputElement) || !(toggleButton instanceof HTMLButtonElement)) {
+        return;
+    }
+
+    const updateToggleState = () => {
+        const isVisible = inputElement.type === "text";
+        const action = isVisible ? t(`${translationPrefix}.hidePassword`) : t(`${translationPrefix}.showPassword`);
+        toggleButton.setAttribute("aria-label", action);
+        toggleButton.setAttribute("title", action);
+    };
+
+    toggleButton.addEventListener("click", () => {
+        inputElement.type = inputElement.type === "password" ? "text" : "password";
+        updateToggleState();
+    });
+
+    updateToggleState();
 }
 
 function readStorage(key, fallback) {
@@ -1625,7 +1692,13 @@ function applyPageTranslations(page, user) {
             setText('label[for="registerUsername"]', t("register.username"));
             setText('label[for="registerEmail"]', t("register.email"));
             setText('label[for="registerPassword"]', t("register.password"));
-            setText("#registerForm button", t("register.button"));
+            setText("#registerPasswordHint", `${t("register.passwordHint")} ${t("register.passwordRules")}`);
+            setText('#registerForm button[type="submit"]', t("register.button"));
+            const registerToggleButton = document.getElementById("toggleRegisterPassword");
+            if (registerToggleButton instanceof HTMLButtonElement) {
+                registerToggleButton.setAttribute("aria-label", t("register.showPassword"));
+                registerToggleButton.setAttribute("title", t("register.showPassword"));
+            }
             const fine = document.querySelector(".auth-card .fine-print");
             if (fine) {
                 fine.innerHTML = `${t("register.already")} <a href="login.html">${t("register.login")}</a>.`;

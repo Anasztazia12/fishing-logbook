@@ -24,7 +24,20 @@
                 <input type="email" id="registerEmail" name="email" required>
 
                 <label for="registerPassword">Password</label>
-                <input type="password" id="registerPassword" name="password" minlength="6" required>
+                <div class="password-wrap">
+                    <input
+                        type="password"
+                        id="registerPassword"
+                        name="password"
+                        minlength="8"
+                        maxlength="20"
+                        pattern="[A-Za-z0-9!@#$%^&*()_\-+=.?]+"
+                        title="Use 8-20 characters. Include at least 1 letter and 1 number."
+                        required
+                    >
+                    <button type="button" id="toggleRegisterPassword" class="password-toggle" aria-label="Show password" title="Show password">&#128065;</button>
+                </div>
+                <p id="registerPasswordHint" class="field-hint">Use 8-20 characters, at least 1 letter and 1 number. Allowed: A-Z a-z 0-9 ! @ # $ % ^ &amp; * ( ) _ - + = . ?</p>
 
                 <button type="submit" class="btn btn-primary">Create account</button>
             </form>
