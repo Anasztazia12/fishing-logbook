@@ -301,7 +301,7 @@ const I18N = {
         "add.baits": "Baits used",
         "add.baitsPh": "Bait type, brand, color...",
         "add.saving": "Saving...",
-        "add.savedAndReload": "Saved. Refreshing the page...",
+        "add.savedAndReload": "Saved. Opening logbook...",
         "add.saveFailed": "Saving failed. Please try again.",
         "add.invalidImage": "Only PNG, JPG, JPEG, WEBP, GIF image files are allowed.",
         "add.previewFailed": "One or more images could not be previewed.",
@@ -502,7 +502,7 @@ const I18N = {
         "add.baits": "Használt csalik",
         "add.baitsPh": "Csali típus, márka, szín...",
         "add.saving": "Mentés folyamatban...",
-        "add.savedAndReload": "Adatok mentve. Oldal frissítése...",
+        "add.savedAndReload": "Adatok mentve. Napló megnyitása...",
         "add.saveFailed": "A mentés nem sikerült. Próbáld újra.",
         "add.invalidImage": "Csak PNG, JPG, JPEG, WEBP, GIF képfájl tölthető fel.",
         "add.previewFailed": "Egy vagy több kép előnézete nem tölthető be.",
@@ -837,6 +837,7 @@ function renderNav(user) {
             `<a href="places.html">${t("nav.places")}</a>`,
             `<button type="button" class="btn-link" id="changeBgBtn">${t("common.changeBg")}</button>`,
             `<button type="button" class="btn-link" id="logoutBtn">${t("nav.logout")}</button>`,
+            effectiveUser.isGuest ? "" : `<div class="nav-separator" role="separator" aria-hidden="true"></div>`,
             effectiveUser.isGuest ? "" : `<button type="button" class="btn-link btn-danger-link" id="deleteAccountBtn">${t("nav.deleteAccount")}</button>`
         ].join("");
     } else {
@@ -1557,7 +1558,7 @@ async function initAddCatch(user) {
             imagePreview.innerHTML = "";
             selectedImages = [];
             setTimeout(() => {
-                window.location.reload();
+                window.location.href = "my-cathches.html?fromSave=1";
             }, 800);
         } catch (error) {
             console.error("Catch save failed", error);
@@ -1590,6 +1591,7 @@ async function initLogbook(user) {
     }
 
     const quick = new URLSearchParams(window.location.search).get("quick");
+    const fromSave = new URLSearchParams(window.location.search).get("fromSave") === "1";
     if (quick === "caught") {
         const fishMinInput = document.getElementById("filterFishMin");
         if (fishMinInput) {
@@ -1603,6 +1605,10 @@ async function initLogbook(user) {
     toggleFilterPanelBtn.addEventListener("click", () => {
         filterPanel.hidden = !filterPanel.hidden;
     });
+
+    if (fromSave) {
+        form.reset();
+    }
 
     let catches = await getUserCatches(user.id);
 
@@ -1628,12 +1634,23 @@ async function initLogbook(user) {
     };
 
     const render = () => {
-        const filtered = filterCatches(catches, new FormData(form));
-        count.textContent = t("logbook.resultCount", { count: filtered.length });
-        count.classList.toggle("badge-empty", filtered.length === 0);
+        const formData = new FormData(form);
+        const hasActiveFilters = Array.from(formData.values()).some((value) => String(value || "").trim() !== "");
+        const filtered = filterCatches(catches, formData);
+
+        count.hidden = !hasActiveFilters;
+        if (hasActiveFilters) {
+            count.textContent = t("logbook.resultCount", { count: filtered.length });
+            count.classList.toggle("badge-empty", filtered.length === 0);
+        } else {
+            count.textContent = "";
+            count.classList.remove("badge-empty");
+        }
 
         if (filtered.length === 0) {
-            container.innerHTML = `<article class="list-item"><p>${t("logbook.noMatch")}</p></article>`;
+            container.innerHTML = hasActiveFilters
+                ? `<article class="list-item"><p>${t("logbook.noMatch")}</p></article>`
+                : "";
             return;
         }
 
@@ -2150,15 +2167,19 @@ async function saveCatch(catchRecord) {
                 12000,
                 "Cloud catch save timed out."
             );
-            return;
         } catch (error) {
             console.warn("Cloud catch save failed, using local fallback.", error);
-            // Falls back to local storage if cloud write hangs/fails.
+            // Keeps local mirror even if cloud save fails.
         }
     }
 
     const catches = readStorage(STORAGE.catches, []);
-    catches.unshift(catchRecord);
+    const index = catches.findIndex((item) => item.id === catchRecord.id);
+    if (index === -1) {
+        catches.unshift(catchRecord);
+    } else {
+        catches[index] = catchRecord;
+    }
     writeStorage(STORAGE.catches, catches);
 }
 

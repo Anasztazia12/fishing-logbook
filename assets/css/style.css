@@ -288,6 +288,14 @@ body {
 	border-color: rgba(255, 194, 194, 0.72);
 }
 
+.topnav .nav-separator {
+	height: 1px;
+	width: 100%;
+	margin: 0.25rem 0 0.1rem;
+	background: linear-gradient(90deg, rgba(255, 240, 199, 0.08), rgba(255, 240, 199, 0.7), rgba(255, 240, 199, 0.08));
+	border-radius: 999px;
+}
+
 .lang-switch {
 	display: inline-flex;
 	align-items: center;
@@ -809,6 +817,10 @@ select:focus {
 	letter-spacing: 0.01em;
 	line-height: 1.2;
 	text-shadow: 0 1px 1px rgba(0, 0, 0, 0.28);
+}
+
+.badge[hidden] {
+	display: none;
 }
 
 .badge-empty {
