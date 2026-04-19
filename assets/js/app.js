@@ -625,13 +625,13 @@ function initIndex(user) {
 
     if (user) {
         actions.innerHTML = [
-            `<a class="btn btn-primary" href="dashboard.html">${t("index.openDashboard")}</a>`,
+            `<a class="btn btn-dark" href="dashboard.html">${t("index.openDashboard")}</a>`,
             `<a class="btn btn-secondary" href="add-catch.html">${t("index.addResult")}</a>`
         ].join("");
     } else {
         actions.innerHTML = [
-            `<a class="btn btn-primary btn-lg" href="login.html">${t("nav.login")}</a>`,
-            `<a class="btn btn-secondary btn-lg" href="register.html">${t("nav.register")}</a>`,
+            `<a class="btn btn-dark btn-lg" href="login.html">${t("nav.login")}</a>`,
+            `<a class="btn btn-primary btn-lg" href="register.html">${t("nav.register")}</a>`,
             `<button class="btn btn-outline-success btn-lg fw-bold" type="button" id="continueGuestBtn">${t("index.continueGuest")}</button>`
         ].join("");
 
