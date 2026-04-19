@@ -188,7 +188,7 @@ const PASSWORD_POLICY = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*()_\-+=.?]{8,20
 const I18N = {
     en: {
         "nav.dashboard": "Dashboard",
-        "nav.startScreen": "Start screen",
+        "nav.startScreen": "Welcome page",
         "nav.addExperience": "Add Experience",
         "nav.logbook": "Logbook",
         "nav.places": "Places",
@@ -370,7 +370,7 @@ const I18N = {
     },
     hu: {
         "nav.dashboard": "Kezdőlap",
-        "nav.startScreen": "Kezdőképernyő",
+        "nav.startScreen": "Belépő oldal",
         "nav.addExperience": "Új élmény",
         "nav.logbook": "Horgásznapló",
         "nav.places": "Helyszínek",
