@@ -251,6 +251,7 @@ const I18N = {
         "register.failed": "Registration failed.",
         "register.weak": "Password is too weak.",
         "register.button": "Create account",
+        "register.passwordConfirm": "Confirm password",
         "register.already": "Already registered?",
         "register.login": "Login",
         "dashboard.welcome": "Welcome, {name}",
@@ -409,6 +410,7 @@ const I18N = {
         "register.failed": "A regisztráció sikertelen.",
         "register.weak": "A jelszó túl gyenge.",
         "register.button": "Fiók létrehozása",
+        "register.passwordConfirm": "Jelszó megerősítése",
         "register.already": "Már regisztráltál?",
         "register.login": "Belépés",
         "dashboard.welcome": "Üdvözöllek, {name}",
@@ -1792,16 +1794,41 @@ function setupPasswordToggle(inputElement, toggleButton, translationPrefix) {
         return;
     }
 
+    const EYE_OPEN = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+    const EYE_CLOSED = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+
+    let autoHideTimer = null;
+
+    const hidePassword = () => {
+        inputElement.type = "password";
+        toggleButton.innerHTML = EYE_CLOSED;
+        toggleButton.setAttribute("aria-label", t(`${translationPrefix}.showPassword`));
+        toggleButton.setAttribute("title", t(`${translationPrefix}.showPassword`));
+    };
+
     const updateToggleState = () => {
         const isVisible = inputElement.type === "text";
+        toggleButton.innerHTML = isVisible ? EYE_OPEN : EYE_CLOSED;
         const action = isVisible ? t(`${translationPrefix}.hidePassword`) : t(`${translationPrefix}.showPassword`);
         toggleButton.setAttribute("aria-label", action);
         toggleButton.setAttribute("title", action);
     };
 
     toggleButton.addEventListener("click", () => {
-        inputElement.type = inputElement.type === "password" ? "text" : "password";
+        const willShow = inputElement.type === "password";
+        inputElement.type = willShow ? "text" : "password";
         updateToggleState();
+
+        if (autoHideTimer) {
+            clearTimeout(autoHideTimer);
+            autoHideTimer = null;
+        }
+        if (willShow) {
+            autoHideTimer = setTimeout(() => {
+                hidePassword();
+                autoHideTimer = null;
+            }, 10000);
+        }
     });
 
     updateToggleState();
