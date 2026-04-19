@@ -67,6 +67,10 @@ function applySavedBackground() {
 }
 
 document.addEventListener("DOMContentLoaded", applySavedBackground);
+document.addEventListener("DOMContentLoaded", () => {
+    renderNav(null);
+    ensureTopbarLanguageSwitch();
+});
 const STORAGE = {
     users: "flb_users",
     currentUser: "flb_current_user",
@@ -286,7 +290,13 @@ const I18N = {
         "index.text": "Regisztrálj vagy lépj be, hogy új horgászati élményeket adj hozzá, szűrd a naplódat, és nézd át a helyszínek adatait teljes részletekkel.",
         "index.openDashboard": "Kezdőlap megnyitása",
         "index.addResult": "Új eredmény rögzítése",
-        "index.continueGuest": "Folytatás vendégként",
+        "index.continueGuest": "Folaz email címhez nem található fiók.",
+        "login.passwordWrong": "A jelszó helytelen.",
+        "login.badCredentials": "Hibás email cím vagy jelszó.",
+        "login.forgotTitle": "Elfelejtett jelszó?",
+        "login.forgotSubtitle": "Kérj visszaállító emailt vagy ideiglenes kódot.",
+        "login.requestReset": "Visszaállítás kérése",
+        "login.resetCode": "Visszaállítytatás vendégként",
         "login.title": "Belépés",
         "login.subtitle": "Lépj be a horgász irányítópultodra.",
         "login.email": "Email",
@@ -294,13 +304,7 @@ const I18N = {
         "login.passwordConfirm": "Jelszó megerősítése",
         "login.button": "Belépés",
         "login.emailInvalid": "Az email cím formátuma hibás.",
-        "login.emailNotFound": "Ehhez az email címhez nem található fiók.",
-        "login.passwordWrong": "A jelszó helytelen.",
-        "login.badCredentials": "Hibás email cím vagy jelszó.",
-        "login.forgotTitle": "Elfelejtett jelszó?",
-        "login.forgotSubtitle": "Kérj visszaállító emailt vagy ideiglenes kódot.",
-        "login.requestReset": "Visszaállítás kérése",
-        "login.resetCode": "Visszaállító kód",
+        "login.emailNotFound": "Ehhez ó kód",
         "login.newPassword": "Új jelszó",
         "login.newPasswordPh": "Add meg az új jelszót",
         "login.applyReset": "Jelszó visszaállítása",
@@ -720,30 +724,13 @@ function ensureTopbarLanguageSwitch() {
 }
 
 function initIndex(user) {
-    const actions = document.getElementById("indexActions");
-    if (!actions) {
-        return;
-    }
-
-    if (user) {
-        actions.innerHTML = [
-            `<a class="btn btn-dark" href="dashboard.html">${t("index.openDashboard")}</a>`,
-            `<a class="btn btn-secondary" href="add-catch.html">${t("index.addResult")}</a>`
-        ].join("");
-    } else {
-        actions.innerHTML = [
-            `<a class="btn btn-dark btn-lg" href="login.html">${t("nav.login")}</a>`,
-            `<a class="btn btn-primary btn-lg" href="register.html">${t("nav.register")}</a>`,
-            `<button class="btn btn-success btn-lg fw-bold" type="button" id="continueGuestBtn">${t("index.continueGuest")}</button>`
-        ].join("");
-
-        const guestButton = document.getElementById("continueGuestBtn");
-        if (guestButton) {
-            guestButton.addEventListener("click", () => {
-                startGuestSession();
-                window.location.href = "dashboard.html";
-            });
-        }
+    // Attach guest logic to static button
+    const guestButton = document.getElementById("continueGuestBtn");
+    if (guestButton) {
+        guestButton.onclick = () => {
+            startGuestSession();
+            window.location.href = "dashboard.html";
+        };
     }
 }
 
@@ -1858,12 +1845,7 @@ function openBgModal() {
             closeBgModal();
         }
     };
-}
-        return item.placeLink;
-    }
 
-    return t("common.unknownPlace");
-}
 
 function renderLanguageSwitch(extraClass = "") {
     const className = ["lang-switch", extraClass].filter(Boolean).join(" ");
@@ -1909,7 +1891,6 @@ function setPlaceholder(selector, value) {
         el.placeholder = value;
     }
 }
-
 function applyPageTranslations(page, user) {
     document.documentElement.lang = currentLanguage;
 
@@ -2062,4 +2043,5 @@ function setText(selector, value, root) {
     if (el) {
         el.textContent = value;
     }
+}
 }

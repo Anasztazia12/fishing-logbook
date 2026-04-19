@@ -9,15 +9,23 @@
 <body data-page="index">
     <header class="topbar">
         <a class="brand" href="index.html">Fishing Logbook</a>
-        <nav class="topnav" id="mainNav"></nav>
+        <div class="topbar-controls">
+            <nav class="topnav" id="mainNav"></nav>
+            <div id="topbarLangSwitch"></div>
+        </div>
     </header>
+
 
     <main class="container">
         <section class="hero">
             <p class="hero-kicker">Personal angling tracker</p>
             <h1>Track every catch, place and fishing memory</h1>
             <p class="hero-text">Register or login to add new fishing experiences, browse your logbook, and review catches by place with full details.</p>
-                <div class="hero-actions" id="indexActions"></div> <!-- This div should be empty -->
+            <div class="hero-actions" id="indexActions">
+                <a class="btn btn-dark btn-lg hero-btn" href="login.html">Login</a>
+                <a class="btn btn-primary btn-lg hero-btn" href="register.html">Registration</a>
+                <button class="btn btn-success btn-lg hero-btn" type="button" id="continueGuestBtn">Continue as Guest</button>
+            </div>
         </section>
     </main>
 
