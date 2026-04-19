@@ -421,6 +421,11 @@ let currentWeightUnit = "kg";
 
 document.addEventListener("DOMContentLoaded", () => {
     void bootstrapApp();
+    // Hamburger menü biztosítása minden oldalon, ha van nav
+    const nav = document.getElementById("mainNav");
+    if (nav) {
+        ensureMenuToggle(nav);
+    }
 });
 
 async function bootstrapApp() {
@@ -1102,8 +1107,18 @@ async function initAddCatch(user) {
         }
     });
 
+
+    const MAX_IMAGES = 10;
     const updatePreview = () => {
-        renderImagePreviews(collectSelectedFiles(imageInput, cameraInput), imagePreview);
+        const files = collectSelectedFiles(imageInput, cameraInput);
+        if (files.length > MAX_IMAGES) {
+            setMessage(msg, t("add.tooManyImages", { fallback: `You can upload up to ${MAX_IMAGES} images per experience.` }), false);
+            // Remove extra files from preview
+            renderImagePreviews(files.slice(0, MAX_IMAGES), imagePreview);
+        } else {
+            setMessage(msg, "", true);
+            renderImagePreviews(files, imagePreview);
+        }
     };
 
     imageInput.addEventListener("change", updatePreview);
@@ -1130,6 +1145,10 @@ async function initAddCatch(user) {
 
         const catchId = crypto.randomUUID();
         const selectedFiles = collectSelectedFiles(imageInput, cameraInput);
+        if (selectedFiles.length > MAX_IMAGES) {
+            setMessage(msg, t("add.tooManyImages", { fallback: `You can upload up to ${MAX_IMAGES} images per experience.` }), false);
+            return;
+        }
         const imageData = await saveImages(selectedFiles, user.id, catchId);
         const fishCount = Number(data.get("fishCount") || 0);
         const waterTemp = parseOptionalNumber(data.get("waterTemp"));
