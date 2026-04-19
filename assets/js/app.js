@@ -192,6 +192,7 @@ const I18N = {
         "nav.logbook": "Logbook",
         "nav.places": "Places",
         "nav.logout": "Logout",
+        "nav.deleteAccount": "Delete account",
         "nav.home": "Home",
         "nav.login": "Login",
         "nav.register": "Register",
@@ -249,6 +250,8 @@ const I18N = {
         "register.hidePassword": "Hide password",
         "register.passwordInvalid": "Password must be 8-20 chars, include at least 1 letter and 1 number, and use only allowed symbols.",
         "register.firebaseFallback": "Cloud registration is unavailable right now. Your account was created locally.",
+        "register.cloudUnavailable": "Cloud registration is currently unavailable. Please try again later.",
+        "register.verificationSent": "Welcome, {name}! A confirmation email has been sent to {email}.",
         "register.success": "Registration successful. Redirecting...",
         "register.failed": "Registration failed.",
         "register.weak": "Password is too weak.",
@@ -341,6 +344,11 @@ const I18N = {
         "places.logsFor": "Logs for {place}",
         "places.noLogs": "No logs for this place.",
         "places.logCount": "{count} log(s) | Largest fish {weight}",
+        "account.deleteConfirm": "Are you sure you want to delete your account? This cannot be undone.",
+        "account.deleted": "Your account has been deleted. We are sorry to see you go.",
+        "account.deleteFailed": "Account deletion failed. Please try again.",
+        "account.recentLogin": "For security, please log in again and then delete your account.",
+        "account.deleteEmailNote": "Automatic deletion confirmation email requires backend email service.",
         "common.unknownPlace": "Unknown place",
         "common.date": "Date",
         "common.caughtFish": "Caught fish",
@@ -355,6 +363,7 @@ const I18N = {
         "nav.logbook": "Horgásznapló",
         "nav.places": "Helyszínek",
         "nav.logout": "Kijelentkezés",
+        "nav.deleteAccount": "Fiók törlése",
         "nav.home": "Főoldal",
         "nav.login": "Belépés",
         "nav.register": "Regisztráció",
@@ -412,6 +421,8 @@ const I18N = {
         "register.hidePassword": "Jelszó elrejtése",
         "register.passwordInvalid": "A jelszó legyen 8-20 karakter, legyen benne legalább 1 betű és 1 szám, és csak engedélyezett karaktereket használj.",
         "register.firebaseFallback": "A felhős regisztráció most nem elérhető. A fiók helyben létrejött.",
+        "register.cloudUnavailable": "A felhős regisztráció most nem elérhető. Próbáld újra később.",
+        "register.verificationSent": "Üdv, {name}! Visszaigazoló emailt küldtünk ide: {email}.",
         "register.success": "Sikeres regisztráció. Átirányítás...",
         "register.failed": "A regisztráció sikertelen.",
         "register.weak": "A jelszó túl gyenge.",
@@ -504,6 +515,11 @@ const I18N = {
         "places.logsFor": "Naplók itt: {place}",
         "places.noLogs": "Ehhez a helyszínhez nincs napló.",
         "places.logCount": "{count} napló | Legnagyobb hal {weight}",
+        "account.deleteConfirm": "Biztosan törölni szeretnéd a fiókodat? Ez nem vonható vissza.",
+        "account.deleted": "A fiók törölve. Sajnáljuk, hogy elmész.",
+        "account.deleteFailed": "A fiók törlése nem sikerült. Próbáld újra.",
+        "account.recentLogin": "Biztonsági okból lépj be újra, majd töröld a fiókodat.",
+        "account.deleteEmailNote": "Automatikus törlési emailhez szerver oldali email küldés szükséges.",
         "common.unknownPlace": "Ismeretlen helyszín",
         "common.date": "Dátum",
         "common.caughtFish": "Kifogott halak",
@@ -605,11 +621,30 @@ function initFirebase() {
             ? window.firebase.app()
             : window.firebase.initializeApp(FIREBASE_CONFIG);
 
-        firebaseState.enabled = true;
         firebaseState.app = app;
-        firebaseState.auth = window.firebase.auth();
-        firebaseState.db = window.firebase.firestore();
-        firebaseState.storage = window.firebase.storage();
+        firebaseState.auth = null;
+        firebaseState.db = null;
+        firebaseState.storage = null;
+
+        try {
+            firebaseState.auth = window.firebase.auth();
+        } catch {
+            firebaseState.auth = null;
+        }
+
+        try {
+            firebaseState.db = window.firebase.firestore();
+        } catch {
+            firebaseState.db = null;
+        }
+
+        try {
+            firebaseState.storage = window.firebase.storage();
+        } catch {
+            firebaseState.storage = null;
+        }
+
+        firebaseState.enabled = Boolean(firebaseState.auth || firebaseState.db || firebaseState.storage);
 
         try {
             if (window.location.protocol.startsWith("http")) {
@@ -657,6 +692,62 @@ function protectPage(page, user) {
     }
 }
 
+async function deleteCurrentAccount() {
+    const user = getCurrentUser();
+    if (!user || user.isGuest) {
+        return;
+    }
+
+    const confirmed = window.confirm(t("account.deleteConfirm"));
+    if (!confirmed) {
+        return;
+    }
+
+    try {
+        if (firebaseState.db) {
+            try {
+                const snapshot = await firebaseState.db
+                    .collection("catches")
+                    .where("userId", "==", user.id)
+                    .get();
+
+                for (const doc of snapshot.docs) {
+                    await doc.ref.delete();
+                }
+            } catch {
+                // Continue deletion even if cloud catch cleanup fails.
+            }
+        }
+
+        if (firebaseState.auth) {
+            const authUser = firebaseState.auth.currentUser;
+            if (!authUser) {
+                window.alert(t("account.recentLogin"));
+                return;
+            }
+            await authUser.delete();
+        }
+
+        const users = readStorage(STORAGE.users, []);
+        writeStorage(STORAGE.users, users.filter((u) => u.email !== user.email));
+
+        const catches = readStorage(STORAGE.catches, []);
+        writeStorage(STORAGE.catches, catches.filter((item) => item.userId !== user.id));
+
+        localStorage.removeItem(STORAGE.currentUser);
+        window.alert(`${t("account.deleted")} ${t("account.deleteEmailNote")}`);
+        window.location.href = "index.html";
+    } catch (error) {
+        const code = String(error?.code || "");
+        if (code === "auth/requires-recent-login") {
+            window.alert(t("account.recentLogin"));
+            return;
+        }
+
+        window.alert(t("account.deleteFailed"));
+    }
+}
+
 function renderNav(user) {
     const nav = document.getElementById("mainNav");
     if (!nav) {
@@ -672,7 +763,8 @@ function renderNav(user) {
             `<a href="my-cathches.html">${t("nav.logbook")}</a>`,
             `<a href="places.html">${t("nav.places")}</a>`,
             `<button type="button" class="btn-link" id="changeBgBtn">${t("common.changeBg")}</button>`,
-            `<button type="button" class="btn-link" id="logoutBtn">${t("nav.logout")}</button>`
+            `<button type="button" class="btn-link" id="logoutBtn">${t("nav.logout")}</button>`,
+            user.isGuest ? "" : `<button type="button" class="btn-link btn-danger-link" id="deleteAccountBtn">${t("nav.deleteAccount")}</button>`
         ].join("");
     } else {
         navHtml = [
@@ -686,6 +778,7 @@ function renderNav(user) {
 
     if (user) {
         const logout = document.getElementById("logoutBtn");
+        const deleteAccountBtn = document.getElementById("deleteAccountBtn");
         if (logout) {
             logout.addEventListener("click", async () => {
                 if (firebaseState.enabled && firebaseState.auth) {
@@ -694,6 +787,12 @@ function renderNav(user) {
 
                 localStorage.removeItem(STORAGE.currentUser);
                 window.location.href = "index.html";
+            });
+        }
+
+        if (deleteAccountBtn) {
+            deleteAccountBtn.addEventListener("click", () => {
+                void deleteCurrentAccount();
             });
         }
     }
@@ -890,14 +989,24 @@ async function initRegister() {
         }
 
         let firebaseUser = null;
-        let usedLocalFallback = false;
 
-        if (firebaseState.enabled && firebaseState.auth) {
+        if (firebaseState.auth) {
             try {
+                let verificationSent = false;
                 const credential = await firebaseState.auth.createUserWithEmailAndPassword(email, password);
                 if (credential.user) {
                     await credential.user.updateProfile({ displayName: username });
+                    try {
+                        await credential.user.sendEmailVerification();
+                        verificationSent = true;
+                    } catch {
+                        verificationSent = false;
+                    }
                     firebaseUser = credential.user;
+                }
+
+                if (verificationSent) {
+                    setMessage(msg, t("register.verificationSent", { name: username, email }), true);
                 }
             } catch (error) {
                 const code = String(error?.code || "");
@@ -911,8 +1020,12 @@ async function initRegister() {
                     return;
                 }
 
-                usedLocalFallback = true;
+                setMessage(msg, parseFirebaseError(error, t("register.cloudUnavailable")), false);
+                return;
             }
+        } else {
+            setMessage(msg, t("register.cloudUnavailable"), false);
+            return;
         }
 
         const newUser = {
@@ -1021,6 +1134,20 @@ async function initLogin() {
         if (userByEmail.password !== password) {
             handleLoginFailure(t("login.passwordWrong"));
             return;
+        }
+
+        if (firebaseState.auth) {
+            try {
+                const credential = await firebaseState.auth.createUserWithEmailAndPassword(email, password);
+                if (credential.user && userByEmail.username) {
+                    await credential.user.updateProfile({ displayName: userByEmail.username });
+                }
+            } catch (error) {
+                const code = String(error?.code || "");
+                if (code !== "auth/email-already-in-use") {
+                    // Local login still succeeds; cloud sync can be retried later.
+                }
+            }
         }
 
         localStorage.setItem(STORAGE.currentUser, JSON.stringify({ id: userByEmail.id, username: userByEmail.username, email: userByEmail.email }));
@@ -1775,9 +1902,9 @@ function parseFirebaseError(error, fallback) {
         case "auth/invalid-credential":
             return t("login.badCredentials", { fallback: "Email or password is incorrect." });
         case "auth/network-request-failed":
-            return t("register.firebaseFallback", { fallback: "Cloud registration is unavailable right now. Your account was created locally." });
+            return t("register.cloudUnavailable", { fallback: "Cloud registration is currently unavailable. Please try again later." });
         case "auth/operation-not-allowed":
-            return t("register.firebaseFallback", { fallback: "Cloud registration is unavailable right now. Your account was created locally." });
+            return t("register.cloudUnavailable", { fallback: "Cloud registration is currently unavailable. Please try again later." });
         default:
             return fallback;
     }

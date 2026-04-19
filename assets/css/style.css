@@ -251,6 +251,19 @@ body {
 	outline-offset: 1px;
 }
 
+.topnav .btn-link.btn-danger-link {
+	color: #ffd9d9;
+	background: rgba(150, 31, 31, 0.35);
+	border: 1px solid rgba(255, 168, 168, 0.45);
+}
+
+.topnav .btn-link.btn-danger-link:hover,
+.topnav .btn-link.btn-danger-link:focus-visible {
+	color: #fff4f4;
+	background: rgba(196, 43, 43, 0.55);
+	border-color: rgba(255, 194, 194, 0.72);
+}
+
 .lang-switch {
 	display: inline-flex;
 	align-items: center;
