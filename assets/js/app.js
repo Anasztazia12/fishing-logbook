@@ -1524,10 +1524,12 @@ async function initLogbook(user) {
         modalContent.innerHTML = renderCatchDetailsMarkup(selected);
         wirePhotoViewer(modalContent);
         modal.hidden = false;
+        document.body.style.overflow = "hidden";
     };
 
     const closeDetailsModal = () => {
         modal.hidden = true;
+        document.body.style.overflow = "";
     };
 
     const render = () => {
@@ -1576,6 +1578,12 @@ async function initLogbook(user) {
     closeModalBtn.addEventListener("click", closeDetailsModal);
     modal.addEventListener("click", (event) => {
         if (event.target === modal) {
+            closeDetailsModal();
+        }
+    });
+
+    document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && !modal.hidden) {
             closeDetailsModal();
         }
     });

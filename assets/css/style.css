@@ -718,6 +718,36 @@ select:focus {
 	max-width: min(420px, 92vw);
 	flex: 0 0 auto;
 	scroll-snap-align: start;
+	padding: 1rem;
+}
+
+.logbook-carousel-list .list-item p {
+	font-size: 0.98rem;
+	line-height: 1.4;
+	margin: 0.3rem 0;
+}
+
+.logbook-fullscreen-overlay {
+	padding: 0;
+	z-index: 1200;
+	background: rgba(15, 20, 14, 0.74);
+}
+
+.logbook-fullscreen-card {
+	width: min(1180px, 96vw);
+	height: min(92vh, 980px);
+	max-height: 92vh;
+	border-radius: 16px;
+	overflow: auto;
+	padding: clamp(0.85rem, 2.2vw, 1.25rem);
+}
+
+.logbook-fullscreen-card .card-head {
+	position: sticky;
+	top: 0;
+	background: color-mix(in srgb, #d1c7ac 86%, white 14%);
+	padding-bottom: 0.4rem;
+	z-index: 3;
 }
 
 .logbook-card-thumb {
@@ -926,6 +956,13 @@ select:focus {
 		min-width: min(84vw, 290px);
 		flex: 0 0 auto;
 		scroll-snap-align: start;
+	}
+
+	.logbook-fullscreen-card {
+		width: 100vw;
+		height: 100vh;
+		max-height: 100vh;
+		border-radius: 0;
 	}
 
 	.place-layout {
