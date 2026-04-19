@@ -955,16 +955,11 @@ async function initLogin() {
         resetModal.hidden = true;
     };
 
-    const showForgotTrigger = () => {
-        forgotTrigger.hidden = false;
-    };
-
     const handleLoginFailure = (messageText) => {
         setMessage(msg, messageText, false);
-        showForgotTrigger();
     };
 
-    forgotTrigger.hidden = true;
+    forgotTrigger.hidden = false;
     forgotTrigger.addEventListener("click", openResetModal);
     closeResetModalBtn.addEventListener("click", closeResetModal);
     resetModal.addEventListener("click", (event) => {
@@ -996,7 +991,6 @@ async function initLogin() {
                 }));
 
                 setMessage(msg, t("login.success", { fallback: "Login successful. Redirecting..." }), true);
-                forgotTrigger.hidden = true;
                 setTimeout(() => {
                     window.location.href = "dashboard.html";
                 }, 500);
@@ -1023,7 +1017,6 @@ async function initLogin() {
 
         localStorage.setItem(STORAGE.currentUser, JSON.stringify({ id: userByEmail.id, username: userByEmail.username, email: userByEmail.email }));
         setMessage(msg, t("login.success", { fallback: "Login successful. Redirecting..." }), true);
-        forgotTrigger.hidden = true;
 
         setTimeout(() => {
             window.location.href = "dashboard.html";
