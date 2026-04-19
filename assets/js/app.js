@@ -2372,26 +2372,42 @@ function renderImagePreviews(files, container, removable = false) {
     }
 
     Array.from(files).forEach((file, index) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-            if (!removable) {
-                const img = document.createElement("img");
-                img.src = String(reader.result || "");
-                img.className = "thumb";
-                img.alt = file.name;
-                container.appendChild(img);
-                return;
-            }
+        const source = typeof file === "string"
+            ? file
+            : URL.createObjectURL(file);
 
-            const card = document.createElement("div");
-            card.className = "preview-thumb-wrap";
-            card.innerHTML = [
-                `<img src="${escapeAttr(String(reader.result || ""))}" class="thumb" alt="${escapeAttr(file.name || `photo-${index + 1}`)}">`,
-                `<button type="button" class="btn btn-danger preview-remove-btn" data-preview-index="${index}">${t("details.removePhoto")}</button>`
-            ].join("");
-            container.appendChild(card);
-        };
-        reader.readAsDataURL(file);
+        const img = document.createElement("img");
+        img.src = source;
+        img.className = "thumb";
+        img.alt = typeof file === "string"
+            ? `photo-${index + 1}`
+            : String(file.name || `photo-${index + 1}`);
+
+        if (typeof file !== "string") {
+            img.addEventListener("load", () => {
+                URL.revokeObjectURL(source);
+            }, { once: true });
+            img.addEventListener("error", () => {
+                URL.revokeObjectURL(source);
+            }, { once: true });
+        }
+
+        if (!removable) {
+            container.appendChild(img);
+            return;
+        }
+
+        const card = document.createElement("div");
+        card.className = "preview-thumb-wrap";
+        const removeBtn = document.createElement("button");
+        removeBtn.type = "button";
+        removeBtn.className = "btn btn-danger preview-remove-btn";
+        removeBtn.setAttribute("data-preview-index", String(index));
+        removeBtn.textContent = t("details.removePhoto");
+
+        card.appendChild(img);
+        card.appendChild(removeBtn);
+        container.appendChild(card);
     });
 }
 
