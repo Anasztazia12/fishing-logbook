@@ -632,7 +632,7 @@ function initIndex(user) {
         actions.innerHTML = [
             `<a class="btn btn-dark btn-lg" href="login.html">${t("nav.login")}</a>`,
             `<a class="btn btn-primary btn-lg" href="register.html">${t("nav.register")}</a>`,
-            `<button class="btn btn-outline-success btn-lg fw-bold" type="button" id="continueGuestBtn">${t("index.continueGuest")}</button>`
+            `<button class="btn btn-success btn-lg fw-bold" type="button" id="continueGuestBtn">${t("index.continueGuest")}</button>`
         ].join("");
 
         const guestButton = document.getElementById("continueGuestBtn");
