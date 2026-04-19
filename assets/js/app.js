@@ -3,6 +3,7 @@ const AVAILABLE_BACKGROUNDS = [
     "background.png",
     "background2.png",
     "camouflage.png",
+    "camouflage2.png",
     "carp.png",
     "carp2.png",
     "Carpbaits.png",
@@ -66,10 +67,30 @@ function applySavedBackground() {
     }
 }
 
-document.addEventListener("DOMContentLoaded", applySavedBackground);
+// SINGLE DOMContentLoaded HANDLER FOR ALL INIT
 document.addEventListener("DOMContentLoaded", () => {
-    renderNav(null);
-    ensureTopbarLanguageSwitch();
+    applySavedBackground();
+    // Ensure topbar controls exist immediately on public pages as well.
+    const nav = document.getElementById("mainNav");
+    if (nav) {
+        renderNav(getCurrentUser());
+    }
+
+    void bootstrapApp().catch(() => {
+        // Keep navigation usable even if bootstrap fails.
+        if (nav) {
+            renderNav(getCurrentUser());
+        }
+    });
+
+    // Always attach guest button logic if present
+    const guestButton = document.getElementById("continueGuestBtn");
+    if (guestButton) {
+        guestButton.onclick = () => {
+            startGuestSession();
+            window.location.href = "dashboard.html";
+        };
+    }
 });
 const STORAGE = {
     users: "flb_users",
@@ -290,13 +311,13 @@ const I18N = {
         "index.text": "Regisztrálj vagy lépj be, hogy új horgászati élményeket adj hozzá, szűrd a naplódat, és nézd át a helyszínek adatait teljes részletekkel.",
         "index.openDashboard": "Kezdőlap megnyitása",
         "index.addResult": "Új eredmény rögzítése",
-        "index.continueGuest": "Folaz email címhez nem található fiók.",
+        "index.continueGuest": "Folytatás vendégként",
         "login.passwordWrong": "A jelszó helytelen.",
         "login.badCredentials": "Hibás email cím vagy jelszó.",
         "login.forgotTitle": "Elfelejtett jelszó?",
         "login.forgotSubtitle": "Kérj visszaállító emailt vagy ideiglenes kódot.",
         "login.requestReset": "Visszaállítás kérése",
-        "login.resetCode": "Visszaállítytatás vendégként",
+        "login.resetCode": "Visszaállító kód",
         "login.title": "Belépés",
         "login.subtitle": "Lépj be a horgász irányítópultodra.",
         "login.email": "Email",
@@ -304,7 +325,7 @@ const I18N = {
         "login.passwordConfirm": "Jelszó megerősítése",
         "login.button": "Belépés",
         "login.emailInvalid": "Az email cím formátuma hibás.",
-        "login.emailNotFound": "Ehhez ó kód",
+        "login.emailNotFound": "Ehhez az email címhez nem található fiók.",
         "login.newPassword": "Új jelszó",
         "login.newPasswordPh": "Add meg az új jelszót",
         "login.applyReset": "Jelszó visszaállítása",
@@ -431,14 +452,7 @@ const I18N = {
 let currentLanguage = getLanguage();
 let currentWeightUnit = "kg";
 
-document.addEventListener("DOMContentLoaded", () => {
-    void bootstrapApp();
-    // Hamburger menü biztosítása minden oldalon, ha van nav
-    const nav = document.getElementById("mainNav");
-    if (nav) {
-        ensureMenuToggle(nav);
-    }
-});
+// (Removed duplicate DOMContentLoaded handler)
 
 async function bootstrapApp() {
     ensureBootstrapStyles();
@@ -587,9 +601,10 @@ function renderNav(user) {
         return;
     }
 
+    let navHtml = "";
     if (user) {
         const guestLabel = user.isGuest ? ` (${t("nav.guest")})` : "";
-        nav.innerHTML = [
+        navHtml = [
             `<a href="dashboard.html">${t("nav.dashboard")}${guestLabel}</a>`,
             `<a href="add-catch.html">${t("nav.addExperience")}</a>`,
             `<a href="my-cathches.html">${t("nav.logbook")}</a>`,
@@ -597,7 +612,17 @@ function renderNav(user) {
             `<button type="button" class="btn-link" id="changeBgBtn">${t("common.changeBg")}</button>`,
             `<button type="button" class="btn-link" id="logoutBtn">${t("nav.logout")}</button>`
         ].join("");
+    } else {
+        navHtml = [
+            `<a href="index.html">${t("nav.home")}</a>`,
+            `<a href="login.html">${t("nav.login")}</a>`,
+            `<a href="register.html">${t("nav.register")}</a>`,
+            `<button type="button" class="btn-link" id="changeBgBtn">${t("common.changeBg")}</button>`
+        ].join("");
+    }
+    nav.innerHTML = navHtml;
 
+    if (user) {
         const logout = document.getElementById("logoutBtn");
         if (logout) {
             logout.addEventListener("click", async () => {
@@ -609,24 +634,20 @@ function renderNav(user) {
                 window.location.href = "index.html";
             });
         }
-    } else {
-        nav.innerHTML = [
-            `<a href="index.html">${t("nav.home")}</a>`,
-            `<a href="login.html">${t("nav.login")}</a>`,
-            `<a href="register.html">${t("nav.register")}</a>`,
-            `<button type="button" class="btn-link" id="changeBgBtn">${t("common.changeBg")}</button>`
-        ].join("");
     }
 
+    // Always ensure hamburger menu and language switch
     ensureMenuToggle(nav);
-        // Add event for background change button
-        setTimeout(() => {
-            const bgBtn = document.getElementById("changeBgBtn");
-            if (bgBtn) {
-                bgBtn.addEventListener("click", openBgModal);
-            }
-        }, 0);
+    setTimeout(() => {
+        const bgBtn = document.getElementById("changeBgBtn");
+        if (bgBtn) {
+            bgBtn.addEventListener("click", openBgModal);
+        }
+    }, 0);
     ensureTopbarLanguageSwitch();
+    // Always show language switch
+    const langWrap = document.getElementById("topbarLangSwitch");
+    if (langWrap) langWrap.style.display = "flex";
 }
 
 function ensureBootstrapStyles() {
@@ -645,9 +666,8 @@ function ensureBootstrapStyles() {
 }
 
 function ensureMenuToggle(nav) {
-
-    const topbar = document.querySelector(".topbar");
-    if (!topbar) {
+    const controls = document.querySelector(".topbar-controls");
+    if (!controls) {
         return;
     }
 
@@ -660,8 +680,7 @@ function ensureMenuToggle(nav) {
         toggle.setAttribute("aria-label", "Toggle navigation");
         toggle.setAttribute("aria-expanded", "false");
         toggle.innerHTML = '<span></span><span></span><span></span>';
-        // Mindig a topbar legelső eleme legyen a hamburger gomb
-        topbar.insertBefore(toggle, topbar.firstChild);
+        controls.appendChild(toggle);
     }
 
 
@@ -695,8 +714,8 @@ function ensureMenuToggle(nav) {
 }
 
 function ensureTopbarLanguageSwitch() {
-    const topbar = document.querySelector(".topbar");
-    if (!topbar) {
+    const controls = document.querySelector(".topbar-controls");
+    if (!controls) {
         return;
     }
 
@@ -704,14 +723,14 @@ function ensureTopbarLanguageSwitch() {
     if (!langWrap) {
         langWrap = document.createElement("div");
         langWrap.id = "topbarLangSwitch";
-        topbar.appendChild(langWrap);
+        controls.appendChild(langWrap);
     }
 
     langWrap.innerHTML = renderLanguageSwitch("topbar-lang");
 
     const toggle = document.getElementById("menuToggle");
     if (toggle) {
-        topbar.insertBefore(langWrap, toggle);
+        controls.insertBefore(langWrap, toggle);
     }
 
     const langButtons = langWrap.querySelectorAll(".lang-btn");
@@ -724,14 +743,7 @@ function ensureTopbarLanguageSwitch() {
 }
 
 function initIndex(user) {
-    // Attach guest logic to static button
-    const guestButton = document.getElementById("continueGuestBtn");
-    if (guestButton) {
-        guestButton.onclick = () => {
-            startGuestSession();
-            window.location.href = "dashboard.html";
-        };
-    }
+    // No-op: guest button logic handled globally in DOMContentLoaded
 }
 
 function startGuestSession() {
@@ -892,12 +904,6 @@ async function initLogin() {
         const formData = new FormData(form);
         const email = String(formData.get("email") || "").trim().toLowerCase();
         const password = String(formData.get("password") || "").trim();
-        const confirmPassword = String(formData.get("password_confirm") || "").trim();
-
-        if (password !== confirmPassword) {
-            handleLoginFailure(t("login.passwordWrong"));
-            return;
-        }
 
         if (!isValidEmail(email)) {
             handleLoginFailure(t("login.emailInvalid"));

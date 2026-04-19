@@ -146,8 +146,8 @@ body {
 .topnav {
 	display: none;
 	position: fixed;
-	left: 2cm;
-	top: 1.5rem;
+	right: 1rem;
+	top: 4.6rem;
 	width: auto;
 	max-width: min(92vw, 320px);
 	flex-direction: column;
@@ -178,7 +178,7 @@ body {
 	justify-content: center;
 	align-items: center;
 	margin-left: 0;
-	margin-right: auto;
+	margin-right: 0;
 }
 
 .menu-toggle span {
@@ -766,13 +766,13 @@ select:focus {
    .menu-toggle {
 	   order: 3;
 	   margin-left: 0;
-	   margin-right: auto;
+	   margin-right: 0;
    }
 
    .topnav {
 	   order: 4;
-	   left: 1.2rem;
-	   right: auto;
+	   right: 0.95rem;
+	   left: auto;
 	   align-items: flex-start;
 	   margin-left: 0;
    }
