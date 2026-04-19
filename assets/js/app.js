@@ -118,6 +118,9 @@ const I18N = {
         "nav.guest": "Guest",
         "common.close": "Close",
         "common.changeBg": "Change background",
+        "common.pictures": "Pictures",
+        "common.ok": "OK",
+        "common.cancel": "Cancel",
         "nav.lang": "Language",
         "nav.weight": "Weight",
         "index.kicker": "Personal angling tracker",
@@ -273,6 +276,9 @@ const I18N = {
         "nav.guest": "Vendég",
         "common.close": "Bezárás",
         "common.changeBg": "Háttér változtatása",
+        "common.pictures": "Képek",
+        "common.ok": "OK",
+        "common.cancel": "Mégsem",
         "nav.lang": "Nyelv",
         "nav.weight": "Súly",
         "index.kicker": "Személyes horgász nyilvántartó",
@@ -1799,37 +1805,60 @@ function kgToLb(kg) {
     return kg * 2.2046226218;
 }
 
-function lbToKg(lb) {
-    return lb / 2.2046226218;
-}
-
-function escapeHtml(value) {
-    return String(value)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#39;");
-}
-
-function escapeAttr(value) {
-    return String(value).replaceAll('"', "&quot;");
-}
-
-function getPrimaryPlaceLabel(item) {
-    if (item.placeName && item.placeName.trim()) {
-        return item.placeName.trim();
+function openBgModal() {
+    let modal = document.getElementById("bgModal");
+    let originalBg = document.body.style.backgroundImage;
+    let selectedImg = null;
+    if (!modal) {
+        modal = document.createElement("div");
+        modal.id = "bgModal";
+        modal.className = "modal-overlay";
+        modal.innerHTML = `
+            <div class="modal-card">
+                <h2>${t("common.pictures")}</h2>
+                <div class="bg-options">
+                    ${AVAILABLE_BACKGROUNDS.map(img => `
+                        <button class="bg-thumb" data-img="${img}" style="background-image:url('assets/images/${img}')" title="${img}"></button>
+                    `).join("")}
+                </div>
+                <div style="display:flex; gap:1rem; justify-content:center; margin-top:1.2rem;">
+                  <button class="btn btn-primary" id="okBgModal">${t("common.ok")}</button>
+                  <button class="btn btn-secondary" id="closeBgModal">${t("common.cancel")}</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    } else {
+        modal.hidden = false;
     }
-
-    if (item.mapsLink && item.mapsLink.trim()) {
-        return item.mapsLink.trim();
-    }
-
-    if (item.placeLink && item.placeLink.trim()) {
-        return item.placeLink.trim();
-    }
-
-    if (item.placeType === "link" && item.placeLink) {
+    modal.style.display = "flex";
+    // Preview logic
+    modal.querySelectorAll(".bg-thumb").forEach(btn => {
+        btn.onclick = () => {
+            selectedImg = btn.getAttribute("data-img");
+            document.body.style.backgroundImage = `url('assets/images/${selectedImg}')`;
+        };
+    });
+    // OK button: set background
+    document.getElementById("okBgModal").onclick = () => {
+        if (selectedImg) {
+            setBackground(selectedImg);
+        }
+        closeBgModal();
+    };
+    // Cancel button: revert preview
+    document.getElementById("closeBgModal").onclick = () => {
+        document.body.style.backgroundImage = originalBg;
+        closeBgModal();
+    };
+    // Click outside modal-card: revert preview and close
+    modal.onclick = (e) => {
+        if (e.target === modal) {
+            document.body.style.backgroundImage = originalBg;
+            closeBgModal();
+        }
+    };
+}
         return item.placeLink;
     }
 
