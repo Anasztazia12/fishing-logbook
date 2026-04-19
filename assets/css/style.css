@@ -851,6 +851,15 @@ select:focus {
 	gap: 0.55rem;
 }
 
+.preview-thumb-wrap {
+	display: grid;
+	gap: 0.4rem;
+}
+
+.preview-remove-btn {
+	width: 100%;
+}
+
 .thumb {
 	width: 100%;
 	height: 140px;

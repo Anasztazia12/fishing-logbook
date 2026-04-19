@@ -2237,6 +2237,78 @@ function editCatchViaPrompts(catchRecord) {
     };
 }
 
+async function editCatchImages(catchRecord) {
+    let workingImages = [...(Array.isArray(catchRecord.imageData) ? catchRecord.imageData : [])];
+
+    while (workingImages.length > 0) {
+        const shouldRemove = window.confirm(`${t("details.removePhoto")}? (${workingImages.length})`);
+        if (!shouldRemove) {
+            break;
+        }
+
+        const raw = window.prompt(`${t("details.removePhoto")} (1-${workingImages.length})`, "1");
+        if (raw === null) {
+            break;
+        }
+
+        const idx = Number(raw) - 1;
+        if (!Number.isInteger(idx) || idx < 0 || idx >= workingImages.length) {
+            continue;
+        }
+
+        workingImages.splice(idx, 1);
+    }
+
+    const addMore = window.confirm(t("details.addMorePhotos"));
+    let uploaded = [];
+    if (addMore) {
+        uploaded = await pickAndUploadAdditionalImages(catchRecord);
+    }
+
+    return {
+        ...catchRecord,
+        imageData: [...workingImages, ...uploaded]
+    };
+}
+
+function pickAndUploadAdditionalImages(catchRecord) {
+    return new Promise((resolve) => {
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = "image/*";
+        input.multiple = true;
+        input.style.position = "fixed";
+        input.style.left = "-9999px";
+        document.body.appendChild(input);
+
+        const cleanup = () => {
+            if (input.parentNode) {
+                input.parentNode.removeChild(input);
+            }
+        };
+
+        input.addEventListener("change", async () => {
+            try {
+                const files = Array.from(input.files || []);
+                if (files.length === 0) {
+                    resolve([]);
+                    return;
+                }
+
+                const uploaded = await saveImages(files, catchRecord.userId || "", catchRecord.id);
+                resolve(uploaded);
+            } catch (error) {
+                console.error("Additional image upload failed", error);
+                resolve([]);
+            } finally {
+                cleanup();
+            }
+        }, { once: true });
+
+        input.click();
+    });
+}
+
 async function saveImages(files, userId, catchId) {
     if (!files || files.length === 0) {
         return [];
@@ -2292,21 +2364,32 @@ function collectFishRows(container) {
     }).filter((fish) => fish.type && fish.weight >= 0);
 }
 
-function renderImagePreviews(files, container) {
+function renderImagePreviews(files, container, removable = false) {
     container.innerHTML = "";
 
     if (!files || files.length === 0) {
         return;
     }
 
-    Array.from(files).forEach((file) => {
+    Array.from(files).forEach((file, index) => {
         const reader = new FileReader();
         reader.onload = () => {
-            const img = document.createElement("img");
-            img.src = String(reader.result || "");
-            img.className = "thumb";
-            img.alt = file.name;
-            container.appendChild(img);
+            if (!removable) {
+                const img = document.createElement("img");
+                img.src = String(reader.result || "");
+                img.className = "thumb";
+                img.alt = file.name;
+                container.appendChild(img);
+                return;
+            }
+
+            const card = document.createElement("div");
+            card.className = "preview-thumb-wrap";
+            card.innerHTML = [
+                `<img src="${escapeAttr(String(reader.result || ""))}" class="thumb" alt="${escapeAttr(file.name || `photo-${index + 1}`)}">`,
+                `<button type="button" class="btn btn-danger preview-remove-btn" data-preview-index="${index}">${t("details.removePhoto")}</button>`
+            ].join("");
+            container.appendChild(card);
         };
         reader.readAsDataURL(file);
     });
