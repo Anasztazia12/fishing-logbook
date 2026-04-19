@@ -929,7 +929,7 @@ async function initRegister() {
             email: newUser.email
         }));
 
-        setMessage(msg, usedLocalFallback ? t("register.firebaseFallback") : t("register.success"), true);
+        setMessage(msg, t("register.success"), true);
         setTimeout(() => {
             window.location.href = "dashboard.html";
         }, 600);
@@ -1002,9 +1002,13 @@ async function initLogin() {
                 }, 500);
                 return;
             } catch (error) {
-                const message = parseFirebaseError(error, t("login.invalid", { fallback: "Invalid email or password." }));
-                handleLoginFailure(message);
-                return;
+                const code = String(error?.code || "");
+                // If wrong password for a known Firebase user, show error immediately
+                if (code === "auth/wrong-password" || code === "auth/invalid-credential") {
+                    handleLoginFailure(parseFirebaseError(error, t("login.invalid", { fallback: "Invalid email or password." })));
+                    return;
+                }
+                // For user-not-found or network errors: fall through to local login
             }
         }
 
