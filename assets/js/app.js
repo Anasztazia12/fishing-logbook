@@ -1108,21 +1108,34 @@ async function initAddCatch(user) {
     });
 
 
+
     const MAX_IMAGES = 10;
+    let selectedImages = [];
+
     const updatePreview = () => {
-        const files = collectSelectedFiles(imageInput, cameraInput);
-        if (files.length > MAX_IMAGES) {
+        // Frissíti az előnézetet a selectedImages alapján
+        renderImagePreviews(selectedImages, imagePreview);
+        if (selectedImages.length > MAX_IMAGES) {
             setMessage(msg, t("add.tooManyImages", { fallback: `You can upload up to ${MAX_IMAGES} images per experience.` }), false);
-            // Remove extra files from preview
-            renderImagePreviews(files.slice(0, MAX_IMAGES), imagePreview);
         } else {
             setMessage(msg, "", true);
-            renderImagePreviews(files, imagePreview);
         }
     };
 
-    imageInput.addEventListener("change", updatePreview);
-    cameraInput.addEventListener("change", updatePreview);
+    const handleFileInput = (input) => {
+        const files = Array.from(input.files || []);
+        if (!files.length) return;
+        // Ha túl sok lenne, csak a hiányzó mennyiséget engedjük hozzáadni
+        const canAdd = Math.max(0, MAX_IMAGES - selectedImages.length);
+        const filesToAdd = files.slice(0, canAdd);
+        selectedImages = selectedImages.concat(filesToAdd);
+        updatePreview();
+        // Reset input, hogy ugyanazt a képet is újra lehessen választani
+        input.value = "";
+    };
+
+    imageInput.addEventListener("change", () => handleFileInput(imageInput));
+    cameraInput.addEventListener("change", () => handleFileInput(cameraInput));
 
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
@@ -1144,12 +1157,11 @@ async function initAddCatch(user) {
         }
 
         const catchId = crypto.randomUUID();
-        const selectedFiles = collectSelectedFiles(imageInput, cameraInput);
-        if (selectedFiles.length > MAX_IMAGES) {
+        if (selectedImages.length > MAX_IMAGES) {
             setMessage(msg, t("add.tooManyImages", { fallback: `You can upload up to ${MAX_IMAGES} images per experience.` }), false);
             return;
         }
-        const imageData = await saveImages(selectedFiles, user.id, catchId);
+        const imageData = await saveImages(selectedImages, user.id, catchId);
         const fishCount = Number(data.get("fishCount") || 0);
         const waterTemp = parseOptionalNumber(data.get("waterTemp"));
         const weather = String(data.get("weather") || "").trim();
@@ -1179,6 +1191,7 @@ async function initAddCatch(user) {
         addFishRow(fishRows);
         addFishRow(fishRows);
         imagePreview.innerHTML = "";
+        selectedImages = [];
     });
 }
 
