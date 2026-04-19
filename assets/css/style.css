@@ -118,6 +118,38 @@ body {
 	transition: background-color 0.16s ease, color 0.16s ease, transform 0.16s ease;
 }
 
+.forgot-trigger {
+	justify-self: start;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	color: var(--primary-dark);
+	font-weight: 700;
+	text-decoration: underline;
+	cursor: pointer;
+}
+
+.forgot-trigger:hover,
+.forgot-trigger:focus-visible {
+	color: #2b3f22;
+}
+
+.reset-modal-overlay {
+	position: fixed;
+	inset: 0;
+	background: rgba(24, 30, 20, 0.45);
+	display: grid;
+	place-items: center;
+	padding: 1rem;
+	z-index: 30;
+}
+
+.reset-modal-card {
+	width: min(560px, 100%);
+	max-height: 86vh;
+	overflow: auto;
+}
+
 .topnav a:hover,
 .topnav .btn-link:hover {
 	color: #fff9df;

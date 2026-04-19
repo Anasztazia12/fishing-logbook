@@ -47,6 +47,7 @@ const I18N = {
         "nav.login": "Login",
         "nav.register": "Register",
         "nav.guest": "Guest",
+        "common.close": "Close",
         "nav.lang": "Language",
         "nav.weight": "Weight",
         "index.kicker": "Personal angling tracker",
@@ -59,6 +60,7 @@ const I18N = {
         "login.subtitle": "Access your fishing dashboard.",
         "login.email": "Email",
         "login.password": "Password",
+        "login.passwordConfirm": "Confirm password",
         "login.button": "Login",
         "login.emailInvalid": "Email format is invalid.",
         "login.emailNotFound": "No account found with this email.",
@@ -71,6 +73,7 @@ const I18N = {
         "login.newPassword": "New password",
         "login.newPasswordPh": "Type your new password",
         "login.applyReset": "Reset password",
+        "login.openReset": "Password reminder",
         "login.resetEmailSent": "Password reset email sent. Check your inbox.",
         "login.resetCodeGenerated": "Temporary code generated: {code} (local mode demo)",
         "login.resetCodeMissing": "No reset code requested for this email.",
@@ -198,6 +201,7 @@ const I18N = {
         "nav.login": "Belépés",
         "nav.register": "Regisztráció",
         "nav.guest": "Vendég",
+        "common.close": "Bezárás",
         "nav.lang": "Nyelv",
         "nav.weight": "Súly",
         "index.kicker": "Személyes horgász nyilvántartó",
@@ -210,6 +214,7 @@ const I18N = {
         "login.subtitle": "Lépj be a horgász irányítópultodra.",
         "login.email": "Email",
         "login.password": "Jelszó",
+        "login.passwordConfirm": "Jelszó megerősítése",
         "login.button": "Belépés",
         "login.emailInvalid": "Az email cím formátuma hibás.",
         "login.emailNotFound": "Ehhez az email címhez nem található fiók.",
@@ -222,6 +227,7 @@ const I18N = {
         "login.newPassword": "Új jelszó",
         "login.newPasswordPh": "Add meg az új jelszót",
         "login.applyReset": "Jelszó visszaállítása",
+        "login.openReset": "Jelszó emlékeztető",
         "login.resetEmailSent": "A jelszó-visszaállító email elküldve. Nézd meg a postafiókodat.",
         "login.resetCodeGenerated": "Ideiglenes kód generálva: {code} (helyi mód demo)",
         "login.resetCodeMissing": "Ehhez az emailhez nincs kért visszaállító kód.",
@@ -742,6 +748,9 @@ async function initRegister() {
 async function initLogin() {
     const form = document.getElementById("loginForm");
     const msg = document.getElementById("loginMessage");
+    const forgotTrigger = document.getElementById("openResetModal");
+    const resetModal = document.getElementById("resetModal");
+    const closeResetModalBtn = document.getElementById("closeResetModal");
     const resetEmailInput = document.getElementById("resetEmail");
     const resetCodeInput = document.getElementById("resetCode");
     const resetNewPasswordInput = document.getElementById("resetNewPassword");
@@ -749,9 +758,35 @@ async function initLogin() {
     const applyResetBtn = document.getElementById("applyResetCode");
     const resetMsg = document.getElementById("resetMessage");
 
-    if (!form || !msg || !resetEmailInput || !resetCodeInput || !resetNewPasswordInput || !requestResetBtn || !applyResetBtn || !resetMsg) {
+    if (!form || !msg || !forgotTrigger || !resetModal || !closeResetModalBtn || !resetEmailInput || !resetCodeInput || !resetNewPasswordInput || !requestResetBtn || !applyResetBtn || !resetMsg) {
         return;
     }
+
+    const openResetModal = () => {
+        resetModal.hidden = false;
+    };
+
+    const closeResetModal = () => {
+        resetModal.hidden = true;
+    };
+
+    const showForgotTrigger = () => {
+        forgotTrigger.hidden = false;
+    };
+
+    const handleLoginFailure = (messageText) => {
+        setMessage(msg, messageText, false);
+        showForgotTrigger();
+    };
+
+    forgotTrigger.hidden = true;
+    forgotTrigger.addEventListener("click", openResetModal);
+    closeResetModalBtn.addEventListener("click", closeResetModal);
+    resetModal.addEventListener("click", (event) => {
+        if (event.target === resetModal) {
+            closeResetModal();
+        }
+    });
 
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
@@ -759,9 +794,15 @@ async function initLogin() {
         const formData = new FormData(form);
         const email = String(formData.get("email") || "").trim().toLowerCase();
         const password = String(formData.get("password") || "").trim();
+        const confirmPassword = String(formData.get("password_confirm") || "").trim();
+
+        if (password !== confirmPassword) {
+            handleLoginFailure(t("login.passwordWrong"));
+            return;
+        }
 
         if (!isValidEmail(email)) {
-            setMessage(msg, t("login.emailInvalid"), false);
+            handleLoginFailure(t("login.emailInvalid"));
             return;
         }
 
@@ -776,13 +817,14 @@ async function initLogin() {
                 }));
 
                 setMessage(msg, t("login.success", { fallback: "Login successful. Redirecting..." }), true);
+                forgotTrigger.hidden = true;
                 setTimeout(() => {
                     window.location.href = "dashboard.html";
                 }, 500);
                 return;
             } catch (error) {
                 const message = parseFirebaseError(error, t("login.invalid", { fallback: "Invalid email or password." }));
-                setMessage(msg, message, false);
+                handleLoginFailure(message);
                 return;
             }
         }
@@ -791,17 +833,18 @@ async function initLogin() {
         const userByEmail = users.find((u) => u.email === email);
 
         if (!userByEmail) {
-            setMessage(msg, t("login.emailNotFound"), false);
+            handleLoginFailure(t("login.emailNotFound"));
             return;
         }
 
         if (userByEmail.password !== password) {
-            setMessage(msg, t("login.passwordWrong"), false);
+            handleLoginFailure(t("login.passwordWrong"));
             return;
         }
 
         localStorage.setItem(STORAGE.currentUser, JSON.stringify({ id: userByEmail.id, username: userByEmail.username, email: userByEmail.email }));
         setMessage(msg, t("login.success", { fallback: "Login successful. Redirecting..." }), true);
+        forgotTrigger.hidden = true;
 
         setTimeout(() => {
             window.location.href = "dashboard.html";
@@ -894,6 +937,8 @@ async function initLogin() {
         delete resetCodes[email];
         writeStorage(STORAGE.resetCodes, resetCodes);
         setMessage(resetMsg, t("login.resetSuccess"), true);
+
+        closeResetModal();
 
         const loginEmail = document.getElementById("loginEmail");
         const loginPassword = document.getElementById("loginPassword");
@@ -1670,7 +1715,9 @@ function applyPageTranslations(page, user) {
             setText(".auth-card > p", t("login.subtitle"));
             setText('label[for="loginEmail"]', t("login.email"));
             setText('label[for="loginPassword"]', t("login.password"));
-            setText("#loginForm button", t("login.button"));
+            setText('label[for="loginPasswordConfirm"]', t("login.passwordConfirm"));
+            setText('#loginForm button[type="submit"]', t("login.button"));
+            setText("#openResetModal", t("login.openReset"));
             setText("#resetTitle", t("login.forgotTitle"));
             setText("#resetSubtitle", t("login.forgotSubtitle"));
             setText('label[for="resetEmail"]', t("login.email"));
@@ -1678,6 +1725,7 @@ function applyPageTranslations(page, user) {
             setText('label[for="resetNewPassword"]', t("login.newPassword"));
             setText("#requestResetCode", t("login.requestReset"));
             setText("#applyResetCode", t("login.applyReset"));
+            setText("#closeResetModal", t("common.close"));
             setPlaceholder("#resetNewPassword", t("login.newPasswordPh"));
             const fine = document.querySelector(".auth-card .fine-print");
             if (fine) {

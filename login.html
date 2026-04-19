@@ -23,30 +23,33 @@
                 <label for="loginPassword">Password</label>
                 <input type="password" id="loginPassword" name="password" required>
 
-                <label for="loginPasswordConfirm">Confirm Password</label>
-                <input type="password" id="loginPasswordConfirm" name="password_confirm" required>
-
                 <button type="submit" class="btn btn-dark">Login</button>
+                <button type="button" id="openResetModal" class="btn-link forgot-trigger" hidden>Password reminder</button>
             </form>
 
-            <section class="stack" id="resetPanel">
-                <h2 id="resetTitle">Forgot password?</h2>
-                <p id="resetSubtitle">Request a reset email or generate a temporary code.</p>
+            <div id="resetModal" class="reset-modal-overlay" hidden>
+                <section class="stack card reset-modal-card" id="resetPanel" role="dialog" aria-modal="true" aria-labelledby="resetTitle">
+                    <div class="card-head">
+                        <h2 id="resetTitle">Forgot password?</h2>
+                        <button type="button" id="closeResetModal" class="btn btn-secondary">Close</button>
+                    </div>
+                    <p id="resetSubtitle">Request a reset email or generate a temporary code.</p>
 
-                <label for="resetEmail">Email</label>
-                <input type="email" id="resetEmail" name="resetEmail">
+                    <label for="resetEmail">Email</label>
+                    <input type="email" id="resetEmail" name="resetEmail">
 
-                <button type="button" id="requestResetCode" class="btn btn-dark">Request reset</button>
+                    <button type="button" id="requestResetCode" class="btn btn-dark">Request reset</button>
 
-                <label for="resetCode">Reset code</label>
-                <input type="text" id="resetCode" name="resetCode" inputmode="numeric" pattern="[0-9]*">
+                    <label for="resetCode">Reset code</label>
+                    <input type="text" id="resetCode" name="resetCode" inputmode="numeric" pattern="[0-9]*">
 
-                <label for="resetNewPassword">New password</label>
-                <input type="password" id="resetNewPassword" name="resetNewPassword" placeholder="Type your new password">
+                    <label for="resetNewPassword">New password</label>
+                    <input type="password" id="resetNewPassword" name="resetNewPassword" placeholder="Type your new password">
 
-                <button type="button" id="applyResetCode" class="btn btn-dark">Reset password</button>
-                <p id="resetMessage" class="message" aria-live="polite"></p>
-            </section>
+                    <button type="button" id="applyResetCode" class="btn btn-dark">Reset password</button>
+                    <p id="resetMessage" class="message" aria-live="polite"></p>
+                </section>
+            </div>
 
             <p class="fine-print">No account yet? <a href="register.html">Register here</a>.</p>
             <p id="loginMessage" class="message" aria-live="polite"></p>
