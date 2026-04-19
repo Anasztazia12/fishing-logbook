@@ -184,6 +184,14 @@ const firebaseState = {
 const PUBLIC_PAGES = new Set(["index", "login", "register"]);
 const SUPPORTED_LANGUAGES = new Set(["en", "hu"]);
 const PASSWORD_POLICY = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*()_\-+=.?]{8,20}$/;
+const ALLOWED_IMAGE_MIME_TYPES = new Set([
+    "image/png",
+    "image/jpeg",
+    "image/jpg",
+    "image/webp",
+    "image/gif"
+]);
+const ALLOWED_IMAGE_EXTENSIONS = [".png", ".jpg", ".jpeg", ".webp", ".gif"];
 
 const I18N = {
     en: {
@@ -295,6 +303,8 @@ const I18N = {
         "add.saving": "Saving...",
         "add.savedAndReload": "Saved. Refreshing the page...",
         "add.saveFailed": "Saving failed. Please try again.",
+        "add.invalidImage": "Only PNG, JPG, JPEG, WEBP, GIF image files are allowed.",
+        "add.previewFailed": "One or more images could not be previewed.",
         "add.fishDetails": "Fish details (type + weight)",
         "add.addFishRow": "Add fish row",
         "add.uploadPhotos": "Upload photos",
@@ -494,6 +504,8 @@ const I18N = {
         "add.saving": "Mentés folyamatban...",
         "add.savedAndReload": "Adatok mentve. Oldal frissítése...",
         "add.saveFailed": "A mentés nem sikerült. Próbáld újra.",
+        "add.invalidImage": "Csak PNG, JPG, JPEG, WEBP, GIF képfájl tölthető fel.",
+        "add.previewFailed": "Egy vagy több kép előnézete nem tölthető be.",
         "add.fishDetails": "Hal adatok (típus + súly)",
         "add.addFishRow": "Hal sor hozzáadása",
         "add.uploadPhotos": "Fotók feltöltése",
@@ -1427,7 +1439,9 @@ async function initAddCatch(user) {
 
     const updatePreview = () => {
         // Frissíti az előnézetet a selectedImages alapján
-        renderImagePreviews(selectedImages, imagePreview, true);
+        renderImagePreviews(selectedImages, imagePreview, true, () => {
+            setMessage(msg, t("add.previewFailed"), false);
+        });
         if (selectedImages.length > MAX_IMAGES) {
             setMessage(msg, t("add.tooManyImages", { fallback: `You can upload up to ${MAX_IMAGES} images per experience.` }), false);
         } else {
@@ -1438,11 +1452,18 @@ async function initAddCatch(user) {
     const handleFileInput = (input) => {
         const files = Array.from(input.files || []);
         if (!files.length) return;
+
+        const imageFiles = files.filter((file) => isAllowedImageFile(file));
+        const hasInvalidFiles = imageFiles.length !== files.length;
+
         // Ha túl sok lenne, csak a hiányzó mennyiséget engedjük hozzáadni
         const canAdd = Math.max(0, MAX_IMAGES - selectedImages.length);
-        const filesToAdd = files.slice(0, canAdd);
+        const filesToAdd = imageFiles.slice(0, canAdd);
         selectedImages = selectedImages.concat(filesToAdd);
         updatePreview();
+        if (hasInvalidFiles) {
+            setMessage(msg, t("add.invalidImage"), false);
+        }
         // Reset input, hogy ugyanazt a képet is újra lehessen választani
         input.value = "";
     };
@@ -2364,7 +2385,7 @@ function collectFishRows(container) {
     }).filter((fish) => fish.type && fish.weight >= 0);
 }
 
-function renderImagePreviews(files, container, removable = false) {
+function renderImagePreviews(files, container, removable = false, onError = null) {
     container.innerHTML = "";
 
     if (!files || files.length === 0) {
@@ -2389,6 +2410,9 @@ function renderImagePreviews(files, container, removable = false) {
             }, { once: true });
             img.addEventListener("error", () => {
                 URL.revokeObjectURL(source);
+                if (typeof onError === "function") {
+                    onError(file);
+                }
             }, { once: true });
         }
 
@@ -2591,6 +2615,16 @@ function parseSaveError(error) {
     }
 
     return t("add.saveFailed");
+}
+
+function isAllowedImageFile(file) {
+    const mime = String(file?.type || "").toLowerCase();
+    if (ALLOWED_IMAGE_MIME_TYPES.has(mime)) {
+        return true;
+    }
+
+    const name = String(file?.name || "").toLowerCase();
+    return ALLOWED_IMAGE_EXTENSIONS.some((ext) => name.endsWith(ext));
 }
 
 function isValidEmail(email) {
