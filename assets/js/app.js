@@ -188,6 +188,7 @@ const PASSWORD_POLICY = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*()_\-+=.?]{8,20
 const I18N = {
     en: {
         "nav.dashboard": "Dashboard",
+        "nav.back": "Back",
         "nav.startScreen": "Welcome page",
         "nav.addExperience": "Add Experience",
         "nav.logbook": "Logbook",
@@ -340,6 +341,17 @@ const I18N = {
         "details.waterTemp": "Water temperature",
         "details.weather": "Weather",
         "details.baits": "Baits used",
+        "details.edit": "Edit",
+        "details.delete": "Delete",
+        "details.editSaved": "Saved changes.",
+        "details.deleted": "Saved catch deleted.",
+        "details.deleteConfirm": "Delete this saved catch?",
+        "details.editDate": "Date",
+        "details.editPlace": "Place name",
+        "details.editFishCount": "Caught fish count",
+        "details.editWeather": "Weather",
+        "details.editBaits": "Baits used",
+        "details.editNotes": "Notes",
         "details.largest": "Largest fish",
         "details.fishList": "Fish list",
         "details.photos": "Photos",
@@ -370,6 +382,7 @@ const I18N = {
     },
     hu: {
         "nav.dashboard": "Kezdőlap",
+        "nav.back": "Vissza",
         "nav.startScreen": "Belépő oldal",
         "nav.addExperience": "Új élmény",
         "nav.logbook": "Horgásznapló",
@@ -522,6 +535,17 @@ const I18N = {
         "details.waterTemp": "Víz hőmérséklet",
         "details.weather": "Időjárás",
         "details.baits": "Használt csalik",
+        "details.edit": "Módosítás",
+        "details.delete": "Törlés",
+        "details.editSaved": "Módosítások mentve.",
+        "details.deleted": "A mentett fogás törölve.",
+        "details.deleteConfirm": "Törlöd ezt a mentett fogást?",
+        "details.editDate": "Dátum",
+        "details.editPlace": "Helyszín neve",
+        "details.editFishCount": "Kifogott halak száma",
+        "details.editWeather": "Időjárás",
+        "details.editBaits": "Használt csalik",
+        "details.editNotes": "Jegyzet",
         "details.largest": "Legnagyobb hal",
         "details.fishList": "Halfaj lista",
         "details.photos": "Fotók",
@@ -784,7 +808,7 @@ function renderNav(user) {
     if (!forcePublicNav && effectiveUser) {
         const guestLabel = effectiveUser.isGuest ? ` (${t("nav.guest")})` : "";
         navHtml = [
-            `<a href="index.html">${t("nav.startScreen")}</a>`,
+            `<button type="button" class="btn-link" id="backBtn">${t("nav.back")}</button>`,
             `<a href="dashboard.html">${t("nav.dashboard")}${guestLabel}</a>`,
             `<a href="add-catch.html">${t("nav.addExperience")}</a>`,
             `<a href="my-cathches.html">${t("nav.logbook")}</a>`,
@@ -804,8 +828,20 @@ function renderNav(user) {
     nav.innerHTML = navHtml;
 
     if (!forcePublicNav && effectiveUser) {
+        const backBtn = document.getElementById("backBtn");
         const logout = document.getElementById("logoutBtn");
         const deleteAccountBtn = document.getElementById("deleteAccountBtn");
+        if (backBtn) {
+            backBtn.addEventListener("click", () => {
+                if (window.history.length > 1) {
+                    window.history.back();
+                    return;
+                }
+
+                window.location.href = "dashboard.html";
+            });
+        }
+
         if (logout) {
             logout.addEventListener("click", async () => {
                 if (firebaseState.enabled && firebaseState.auth) {
@@ -1515,7 +1551,7 @@ async function initLogbook(user) {
         filterPanel.hidden = !filterPanel.hidden;
     });
 
-    const catches = await getUserCatches(user.id);
+    let catches = await getUserCatches(user.id);
 
     const openDetailsModal = (catchId) => {
         const selected = catches.find((item) => item.id === catchId);
@@ -1532,6 +1568,10 @@ async function initLogbook(user) {
     const closeDetailsModal = () => {
         modal.hidden = true;
         document.body.style.overflow = "";
+    };
+
+    const refreshCatches = async () => {
+        catches = await getUserCatches(user.id);
     };
 
     const render = () => {
@@ -1577,6 +1617,38 @@ async function initLogbook(user) {
         openDetailsModal(catchId);
     });
 
+    wireDetailActions(modalContent, {
+        onEdit: async (catchId) => {
+            const selected = catches.find((item) => item.id === catchId);
+            if (!selected) {
+                return;
+            }
+
+            const updated = editCatchViaPrompts(selected);
+            if (!updated) {
+                return;
+            }
+
+            await updateCatchRecord(updated);
+            await refreshCatches();
+            render();
+            openDetailsModal(updated.id);
+            window.alert(t("details.editSaved"));
+        },
+        onDelete: async (catchId) => {
+            const confirmDelete = window.confirm(t("details.deleteConfirm"));
+            if (!confirmDelete) {
+                return;
+            }
+
+            await deleteCatchRecord(catchId, user.id);
+            await refreshCatches();
+            render();
+            closeDetailsModal();
+            window.alert(t("details.deleted"));
+        }
+    });
+
     closeModalBtn.addEventListener("click", closeDetailsModal);
     modal.addEventListener("click", (event) => {
         if (event.target === modal) {
@@ -1603,7 +1675,7 @@ async function initCatchDetails(user) {
         return;
     }
 
-    const catches = await getUserCatches(user.id);
+    let catches = await getUserCatches(user.id);
     if (catches.length === 0) {
         container.innerHTML = `<p class="message error">${t("logbook.noMatch")}</p>`;
         return;
@@ -1646,6 +1718,10 @@ async function initCatchDetails(user) {
         wirePhotoViewer(preview);
     };
 
+    const refreshCatches = async () => {
+        catches = await getUserCatches(user.id);
+    };
+
     carousel.addEventListener("click", (event) => {
         const target = event.target;
         if (!(target instanceof HTMLElement)) {
@@ -1661,6 +1737,43 @@ async function initCatchDetails(user) {
         }
         activeId = nextId;
         renderSelected();
+    });
+
+    wireDetailActions(preview, {
+        onEdit: async (catchId) => {
+            const selected = catches.find((item) => item.id === catchId);
+            if (!selected) {
+                return;
+            }
+
+            const updated = editCatchViaPrompts(selected);
+            if (!updated) {
+                return;
+            }
+
+            await updateCatchRecord(updated);
+            await refreshCatches();
+            activeId = updated.id;
+            renderSelected();
+            window.alert(t("details.editSaved"));
+        },
+        onDelete: async (catchId) => {
+            const confirmDelete = window.confirm(t("details.deleteConfirm"));
+            if (!confirmDelete) {
+                return;
+            }
+
+            await deleteCatchRecord(catchId, user.id);
+            await refreshCatches();
+            if (catches.length === 0) {
+                container.innerHTML = `<p class="message error">${t("logbook.noMatch")}</p>`;
+                return;
+            }
+
+            activeId = catches[0].id;
+            renderSelected();
+            window.alert(t("details.deleted"));
+        }
     });
 
     renderSelected();
@@ -1695,6 +1808,10 @@ function renderCatchDetailsMarkup(selected) {
         : `<p>${t("details.noPhotos")}</p>`;
 
     return [
+        `<div class="detail-actions">`,
+        `<button type="button" class="btn btn-primary detail-action" data-catch-action="edit" data-catch-id="${escapeAttr(selected.id)}">${t("details.edit")}</button>`,
+        `<button type="button" class="btn btn-danger detail-action" data-catch-action="delete" data-catch-id="${escapeAttr(selected.id)}">${t("details.delete")}</button>`,
+        `</div>`,
         `<div class="detail-grid">`,
         `<p><strong>${t("details.date")}:</strong> ${escapeHtml(selected.date || "-")}</p>`,
         `<p><strong>${t("details.placeName")}:</strong> ${placeName}</p>`,
@@ -1757,6 +1874,45 @@ function wirePhotoViewer(root) {
         const thumbButtons = viewer.querySelectorAll(".photo-thumb-btn");
         thumbButtons.forEach((el) => el.classList.remove("active"));
         btn.classList.add("active");
+    });
+}
+
+function wireDetailActions(root, handlers) {
+    if (!root) {
+        return;
+    }
+
+    if (root.dataset.detailActionsBound === "1") {
+        return;
+    }
+
+    root.dataset.detailActionsBound = "1";
+
+    root.addEventListener("click", (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLElement)) {
+            return;
+        }
+
+        const btn = target.closest(".detail-action");
+        if (!btn) {
+            return;
+        }
+
+        const catchId = btn.getAttribute("data-catch-id") || "";
+        const action = btn.getAttribute("data-catch-action") || "";
+        if (!catchId) {
+            return;
+        }
+
+        if (action === "edit") {
+            void handlers?.onEdit?.(catchId);
+            return;
+        }
+
+        if (action === "delete") {
+            void handlers?.onDelete?.(catchId);
+        }
     });
 }
 
@@ -1910,6 +2066,100 @@ async function saveCatch(catchRecord) {
     const catches = readStorage(STORAGE.catches, []);
     catches.unshift(catchRecord);
     writeStorage(STORAGE.catches, catches);
+}
+
+async function updateCatchRecord(catchRecord) {
+    const user = getCurrentUser();
+    const isGuest = Boolean(user?.isGuest);
+
+    if (!isGuest && firebaseState.enabled && firebaseState.db) {
+        try {
+            await withTimeout(
+                firebaseState.db.collection("catches").doc(catchRecord.id).set(catchRecord),
+                12000,
+                "Cloud catch update timed out."
+            );
+        } catch {
+            // Falls back to local update.
+        }
+    }
+
+    const catches = readStorage(STORAGE.catches, []);
+    const index = catches.findIndex((item) => item.id === catchRecord.id);
+    if (index === -1) {
+        catches.unshift(catchRecord);
+    } else {
+        catches[index] = catchRecord;
+    }
+    writeStorage(STORAGE.catches, catches);
+}
+
+async function deleteCatchRecord(catchId, userId) {
+    const user = getCurrentUser();
+    const isGuest = Boolean(user?.isGuest);
+
+    if (!isGuest && firebaseState.enabled && firebaseState.db) {
+        try {
+            await withTimeout(
+                firebaseState.db.collection("catches").doc(catchId).delete(),
+                12000,
+                "Cloud catch delete timed out."
+            );
+        } catch {
+            // Falls through to local delete.
+        }
+    }
+
+    const catches = readStorage(STORAGE.catches, []);
+    const filtered = catches.filter((item) => item.id !== catchId || (userId && item.userId !== userId));
+    writeStorage(STORAGE.catches, filtered);
+}
+
+function editCatchViaPrompts(catchRecord) {
+    const nextDate = window.prompt(t("details.editDate"), String(catchRecord.date || ""));
+    if (nextDate === null) {
+        return null;
+    }
+
+    const nextPlace = window.prompt(t("details.editPlace"), String(catchRecord.placeName || ""));
+    if (nextPlace === null) {
+        return null;
+    }
+
+    const nextFishCountRaw = window.prompt(t("details.editFishCount"), String(catchRecord.fishCount ?? 0));
+    if (nextFishCountRaw === null) {
+        return null;
+    }
+
+    const parsedFishCount = Number(nextFishCountRaw);
+    if (!Number.isFinite(parsedFishCount) || parsedFishCount < 0) {
+        return null;
+    }
+
+    const nextWeather = window.prompt(t("details.editWeather"), String(catchRecord.weather || ""));
+    if (nextWeather === null) {
+        return null;
+    }
+
+    const nextBaits = window.prompt(t("details.editBaits"), String(catchRecord.baits || ""));
+    if (nextBaits === null) {
+        return null;
+    }
+
+    const nextNotes = window.prompt(t("details.editNotes"), String(catchRecord.notes || ""));
+    if (nextNotes === null) {
+        return null;
+    }
+
+    return {
+        ...catchRecord,
+        date: String(nextDate).trim() || catchRecord.date,
+        placeName: String(nextPlace).trim(),
+        fishCount: parsedFishCount,
+        weather: String(nextWeather).trim(),
+        baits: String(nextBaits).trim(),
+        notes: String(nextNotes).trim()
+    };
 }
 
 async function saveImages(files, userId, catchId) {
