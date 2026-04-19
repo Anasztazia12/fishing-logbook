@@ -1782,10 +1782,10 @@ function getCurrentUser() {
 async function getUserCatches(userId) {
     const user = getCurrentUser();
     const isGuest = Boolean(user?.isGuest);
+    const localOwn = readStorage(STORAGE.catches, []).filter((item) => item.userId === userId);
 
     if (isGuest) {
-        const catchesLocal = readStorage(STORAGE.catches, []);
-        const ownGuest = catchesLocal.filter((item) => item.userId === userId);
+        const ownGuest = localOwn;
 
         return ownGuest.sort((a, b) => {
             const aDate = new Date(a.date || a.createdAt).getTime();
@@ -1801,20 +1801,26 @@ async function getUserCatches(userId) {
                 .where("userId", "==", userId)
                 .get();
 
-            return snapshot.docs
-                .map((doc) => ({ ...doc.data() }))
-                .sort((a, b) => {
-                    const aDate = new Date(a.date || a.createdAt).getTime();
-                    const bDate = new Date(b.date || b.createdAt).getTime();
-                    return bDate - aDate;
-                });
+            const cloud = snapshot.docs.map((doc) => ({ ...doc.data() }));
+            const merged = [...cloud];
+            const cloudIds = new Set(cloud.map((item) => item.id));
+            localOwn.forEach((item) => {
+                if (!cloudIds.has(item.id)) {
+                    merged.push(item);
+                }
+            });
+
+            return merged.sort((a, b) => {
+                const aDate = new Date(a.date || a.createdAt).getTime();
+                const bDate = new Date(b.date || b.createdAt).getTime();
+                return bDate - aDate;
+            });
         } catch {
             // Falls through to local data if cloud query fails.
         }
     }
 
-    const catches = readStorage(STORAGE.catches, []);
-    const own = catches.filter((item) => item.userId === userId);
+    const own = localOwn;
 
     return own.sort((a, b) => {
         const aDate = new Date(a.date || a.createdAt).getTime();
@@ -1828,8 +1834,16 @@ async function saveCatch(catchRecord) {
     const isGuest = Boolean(user?.isGuest);
 
     if (!isGuest && firebaseState.enabled && firebaseState.db) {
-        await firebaseState.db.collection("catches").doc(catchRecord.id).set(catchRecord);
-        return;
+        try {
+            await withTimeout(
+                firebaseState.db.collection("catches").doc(catchRecord.id).set(catchRecord),
+                12000,
+                "Cloud catch save timed out."
+            );
+            return;
+        } catch {
+            // Falls back to local storage if cloud write hangs/fails.
+        }
     }
 
     const catches = readStorage(STORAGE.catches, []);
@@ -1851,11 +1865,11 @@ async function saveImages(files, userId, catchId) {
                 const safeName = String(file.name || `image-${index}`).replaceAll(/[^a-zA-Z0-9._-]/g, "_");
                 const path = `catches/${userId}/${catchId}/${Date.now()}-${index}-${safeName}`;
                 const ref = firebaseState.storage.ref().child(path);
-                await ref.put(file);
-                return ref.getDownloadURL();
+                await withTimeout(ref.put(file), 12000, "Cloud image upload timed out.");
+                return withTimeout(ref.getDownloadURL(), 8000, "Cloud image URL timed out.");
             });
 
-            return Promise.all(uploads);
+            return await withTimeout(Promise.all(uploads), 20000, "Cloud image upload batch timed out.");
         } catch {
             // Falls through to local base64 save.
         }
@@ -2024,6 +2038,19 @@ function parseOptionalNumber(value) {
 
     const n = Number(value);
     return Number.isFinite(n) ? n : null;
+}
+
+function withTimeout(promise, ms, errorMessage) {
+    let timeoutId;
+    const timeoutPromise = new Promise((_, reject) => {
+        timeoutId = setTimeout(() => {
+            reject(new Error(errorMessage || "Operation timed out."));
+        }, ms);
+    });
+
+    return Promise.race([promise, timeoutPromise]).finally(() => {
+        clearTimeout(timeoutId);
+    });
 }
 
 function parseFirebaseError(error, fallback) {
