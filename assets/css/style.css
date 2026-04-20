@@ -806,14 +806,6 @@ select:focus {
 	display: none;
 }
 
-.logbook-list-card {
-	padding-top: 0.9rem;
-}
-
-.logbook-list-card #resultCount {
-	margin-bottom: 0.55rem;
-}
-
 .badge-empty {
 	background: #7b2d29;
 	color: #fff7f6;
@@ -941,11 +933,48 @@ select:focus {
 	grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.place-search-row {
+	margin-bottom: 0.55rem;
+}
+
+.place-search-row input {
+	min-width: 220px;
+	flex: 1;
+}
+
+.place-carousel-list {
+	display: flex;
+	overflow-x: auto;
+	gap: 0.7rem;
+	scroll-snap-type: x mandatory;
+	padding-bottom: 0.35rem;
+}
+
+.place-carousel-card {
+	min-width: min(350px, 84vw);
+	max-width: min(420px, 92vw);
+	flex: 0 0 auto;
+	scroll-snap-align: start;
+}
+
 .place-btn {
 	width: 100%;
 	text-align: left;
 	border: 1px solid rgba(14, 116, 144, 0.22);
 	cursor: pointer;
+}
+
+.place-btn.active {
+	border-color: rgba(47, 88, 38, 0.7);
+	box-shadow: 0 0 0 2px rgba(84, 150, 61, 0.24);
+}
+
+.recommended-editor-card {
+	margin-top: 0.85rem;
+}
+
+.recommended-place-btn p {
+	margin: 0;
 }
 
 @keyframes rise-in {
@@ -1014,6 +1043,10 @@ select:focus {
 
 	.place-layout {
 		grid-template-columns: 1fr;
+	}
+
+	.place-carousel-card {
+		min-width: min(84vw, 300px);
 	}
 }
 

@@ -15,16 +15,47 @@
         </div>
     </header>
 
-    <main class="container place-layout">
+    <main class="container">
         <section class="card">
             <h1>Fishing places</h1>
             <p>Open any place to see all logs and details you wrote there.</p>
-            <div id="placesList" class="list-grid"></div>
-        </section>
+            <div class="card-head place-search-row">
+                <input type="text" id="placeSearchInput" placeholder="Search place...">
+                <button type="button" id="placeSearchBtn" class="btn btn-secondary">🔍 Search</button>
+            </div>
+            <h2 id="placesModeTitle">Fishing places</h2>
+            <div id="placesList" class="list-grid place-carousel-list"></div>
 
-        <section class="card">
-            <h2 id="selectedPlaceTitle">Select a place</h2>
+            <h2 id="selectedPlaceTitle">Fishing place details</h2>
             <div id="placeCatches" class="list-grid"></div>
+
+            <section class="card recommended-editor-card">
+                <div class="card-head">
+                    <h2 id="recommendedEditorTitle">Place record</h2>
+                </div>
+                <form id="recommendedPlaceForm" class="stack">
+                    <input type="hidden" id="recommendedPlaceId" name="recommendedPlaceId">
+                    <label for="recommendedPlaceName">Place name</label>
+                    <input type="text" id="recommendedPlaceName" name="recommendedPlaceName" required>
+
+                    <label for="recommendedPlaceInfo">Info</label>
+                    <textarea id="recommendedPlaceInfo" name="recommendedPlaceInfo" rows="4" placeholder="Why do you recommend this place?"></textarea>
+
+                    <label for="recommendedPlaceLink">Link</label>
+                    <input type="url" id="recommendedPlaceLink" name="recommendedPlaceLink" placeholder="https://example.com/place">
+
+                    <label for="recommendedPlaceImages">Photos</label>
+                    <input type="file" id="recommendedPlaceImages" name="recommendedPlaceImages" accept=".png,.jpg,.jpeg,.webp,.gif,image/png,image/jpeg,image/webp,image/gif" multiple>
+                    <div id="recommendedPlaceImagePreview" class="image-preview"></div>
+
+                    <div class="filter-actions">
+                        <button type="submit" id="recommendedSaveBtn" class="btn btn-success">Save</button>
+                        <button type="button" id="recommendedDeleteBtn" class="btn btn-danger">Delete</button>
+                        <button type="button" id="recommendedClearBtn" class="btn btn-secondary">Clear</button>
+                    </div>
+                </form>
+                <p id="recommendedPlaceMessage" class="message" aria-live="polite"></p>
+            </section>
         </section>
     </main>
 

@@ -151,6 +151,7 @@ const STORAGE = {
     users: "flb_users",
     currentUser: "flb_current_user",
     catches: "flb_catches",
+    recommendedPlaces: "flb_recommended_places",
     resetCodes: "flb_reset_codes",
     language: "flb_language"
 };
@@ -201,6 +202,8 @@ const I18N = {
         "nav.addExperience": "Add Experience",
         "nav.logbook": "Logbook",
         "nav.places": "Places",
+        "nav.placesFished": "Places I fished",
+        "nav.placesWishlist": "Interesting places",
         "nav.logout": "Logout",
         "nav.deleteAccount": "Delete account",
         "nav.home": "Home",
@@ -378,6 +381,32 @@ const I18N = {
         "places.title": "Fishing places",
         "places.subtitle": "Open any place to see all logs and details you wrote there.",
         "places.select": "Select a place",
+        "places.search": "Search",
+        "places.searchPh": "Search place...",
+        "places.fishingList": "Fishing places",
+        "places.fishedModeTitle": "Places where I fished",
+        "places.wishlistModeTitle": "Interesting places",
+        "places.recommendedList": "Recommended places",
+        "places.detailsTitle": "Fishing place details",
+        "places.recommendedEditor": "Recommended place",
+        "places.editorFished": "New fished place",
+        "places.editorWishlist": "New interesting place",
+        "places.recommendedName": "Place name",
+        "places.recommendedInfo": "Info",
+        "places.recommendedInfoPh": "Why do you recommend this place?",
+        "places.recommendedLink": "Link",
+        "places.recommendedLinkPh": "https://example.com/place",
+        "places.recommendedPhotos": "Photos",
+        "places.recommendedSave": "Save",
+        "places.recommendedDelete": "Delete",
+        "places.recommendedClear": "Clear",
+        "places.recommendedSaved": "Place saved.",
+        "places.recommendedDeleted": "Place deleted.",
+        "places.recommendedDeleteConfirm": "Delete this recommended place?",
+        "places.recommendedNoItems": "No recommended places yet.",
+        "places.recommendedFor": "Recommended: {place}",
+        "places.savedFor": "Saved place: {place}",
+        "places.sourceCatch": "From saved catches",
         "places.noPlaces": "No places yet. Add a fishing experience first.",
         "places.logsFor": "Logs for {place}",
         "places.noLogs": "No logs for this place.",
@@ -402,6 +431,8 @@ const I18N = {
         "nav.addExperience": "Új élmény",
         "nav.logbook": "Horgásznapló",
         "nav.places": "Helyszínek",
+        "nav.placesFished": "Ahol horgásztam",
+        "nav.placesWishlist": "Érdekes helyek",
         "nav.logout": "Kijelentkezés",
         "nav.deleteAccount": "Fiók törlése",
         "nav.home": "Főoldal",
@@ -579,6 +610,32 @@ const I18N = {
         "places.title": "Horgász helyszínek",
         "places.subtitle": "Kattints egy helyszínre, és nézd meg az ottani teljes naplóbejegyzéseket.",
         "places.select": "Válassz helyszínt",
+        "places.search": "Keresés",
+        "places.searchPh": "Hely keresése...",
+        "places.fishingList": "Horgász helyek",
+        "places.fishedModeTitle": "Helyek, ahol horgásztam",
+        "places.wishlistModeTitle": "Érdekes helyek",
+        "places.recommendedList": "Ajánlott helyek",
+        "places.detailsTitle": "Horgászhely adatok",
+        "places.recommendedEditor": "Ajánlott hely",
+        "places.editorFished": "Új horgászott hely",
+        "places.editorWishlist": "Új érdekes hely",
+        "places.recommendedName": "Hely neve",
+        "places.recommendedInfo": "Információ",
+        "places.recommendedInfoPh": "Miért ajánlod ezt a helyet?",
+        "places.recommendedLink": "Link",
+        "places.recommendedLinkPh": "https://pelda.hu/hely",
+        "places.recommendedPhotos": "Fotók",
+        "places.recommendedSave": "Mentés",
+        "places.recommendedDelete": "Törlés",
+        "places.recommendedClear": "Törlés",
+        "places.recommendedSaved": "Hely elmentve.",
+        "places.recommendedDeleted": "Hely törölve.",
+        "places.recommendedDeleteConfirm": "Törlöd ezt az ajánlott helyet?",
+        "places.recommendedNoItems": "Még nincs ajánlott hely.",
+        "places.recommendedFor": "Ajánlott: {place}",
+        "places.savedFor": "Mentett hely: {place}",
+        "places.sourceCatch": "Mentett fogásokból",
         "places.noPlaces": "Még nincs helyszín. Rögzíts előbb egy horgászati élményt.",
         "places.logsFor": "Naplók itt: {place}",
         "places.noLogs": "Ehhez a helyszínhez nincs napló.",
@@ -846,7 +903,8 @@ function renderNav(user) {
             `<a href="dashboard.html">${t("nav.dashboard")}${guestLabel}</a>`,
             `<a href="add-catch.html">${t("nav.addExperience")}</a>`,
             `<a href="my-cathches.html">${t("nav.logbook")}</a>`,
-            `<a href="places.html">${t("nav.places")}</a>`,
+            `<a href="places.html?mode=fished">${t("nav.placesFished")}</a>`,
+            `<a href="places.html?mode=wishlist">${t("nav.placesWishlist")}</a>`,
             `<button type="button" class="btn-link" id="changeBgBtn">${t("common.changeBg")}</button>`,
             `<button type="button" class="btn-link" id="logoutBtn">${t("nav.logout")}</button>`,
             effectiveUser.isGuest ? "" : `<div class="nav-separator" role="separator" aria-hidden="true"></div>`,
@@ -1599,7 +1657,7 @@ async function initLogbook(user) {
     const filterPanel = document.getElementById("filterPanel");
     const toggleFilterPanelBtn = document.getElementById("toggleFilterPanel");
 
-    if (!form || !clearBtn || !container || !count || !modal || !modalContent || !closeModalBtn || !filterPanel || !toggleFilterPanelBtn) {
+    if (!form || !clearBtn || !container || !modal || !modalContent || !closeModalBtn || !filterPanel || !toggleFilterPanelBtn) {
         return;
     }
 
@@ -1660,13 +1718,15 @@ async function initLogbook(user) {
         const filtered = filterCatches(catches, formData);
         const shouldShowSearchFeedback = hasActiveFilters || didSearch;
 
-        count.hidden = !shouldShowSearchFeedback;
-        if (shouldShowSearchFeedback) {
-            count.textContent = t("logbook.resultCount", { count: filtered.length });
-            count.classList.toggle("badge-empty", filtered.length === 0);
-        } else {
-            count.textContent = "";
-            count.classList.remove("badge-empty");
+        if (count) {
+            count.hidden = !shouldShowSearchFeedback;
+            if (shouldShowSearchFeedback) {
+                count.textContent = t("logbook.resultCount", { count: filtered.length });
+                count.classList.toggle("badge-empty", filtered.length === 0);
+            } else {
+                count.textContent = "";
+                count.classList.remove("badge-empty");
+            }
         }
 
         if (filtered.length === 0) {
@@ -2056,44 +2116,201 @@ async function initPlaces(user) {
     }
 
     const placesList = document.getElementById("placesList");
+    const modeTitle = document.getElementById("placesModeTitle");
     const catchesContainer = document.getElementById("placeCatches");
     const title = document.getElementById("selectedPlaceTitle");
+    const searchInput = document.getElementById("placeSearchInput");
+    const searchBtn = document.getElementById("placeSearchBtn");
+    const form = document.getElementById("recommendedPlaceForm");
+    const idInput = document.getElementById("recommendedPlaceId");
+    const nameInput = document.getElementById("recommendedPlaceName");
+    const infoInput = document.getElementById("recommendedPlaceInfo");
+    const linkInput = document.getElementById("recommendedPlaceLink");
+    const imagesInput = document.getElementById("recommendedPlaceImages");
+    const imagePreview = document.getElementById("recommendedPlaceImagePreview");
+    const saveBtn = document.getElementById("recommendedSaveBtn");
+    const deleteBtn = document.getElementById("recommendedDeleteBtn");
+    const clearBtn = document.getElementById("recommendedClearBtn");
+    const msg = document.getElementById("recommendedPlaceMessage");
+    const editorTitle = document.getElementById("recommendedEditorTitle");
 
-    if (!placesList || !catchesContainer || !title) {
+    if (!placesList || !modeTitle || !catchesContainer || !title || !searchInput || !searchBtn || !form || !idInput || !nameInput || !infoInput || !linkInput || !imagesInput || !imagePreview || !saveBtn || !deleteBtn || !clearBtn || !msg || !editorTitle) {
         return;
     }
+
+    const modeParam = new URLSearchParams(window.location.search).get("mode");
+    const mode = modeParam === "wishlist" ? "wishlist" : "fished";
+
+    modeTitle.textContent = mode === "wishlist" ? t("places.wishlistModeTitle") : t("places.fishedModeTitle");
+    editorTitle.textContent = mode === "wishlist" ? t("places.editorWishlist") : t("places.editorFished");
 
     const catches = await getUserCatches(user.id);
-    if (catches.length === 0) {
-        placesList.innerHTML = `<article class="list-item"><p>${t("places.noPlaces")}</p></article>`;
-        catchesContainer.innerHTML = "";
-        return;
-    }
+    let savedPlaces = getUserRecommendedPlaces(user, mode);
+    let searchQuery = "";
+    let existingImages = [];
+    let newImageFiles = [];
+    let activeEntryId = "";
 
-    const grouped = groupByPlace(catches);
-    const entries = Object.entries(grouped).sort((a, b) => b[1].length - a[1].length);
+    const normalizeSearch = (text) => String(text || "").toLowerCase();
 
-    placesList.innerHTML = entries.map(([key, list], index) => {
-        const largest = Math.max(...list.map(getLargestWeight));
-        return [
-            `<button type="button" class="list-item place-btn" data-place="${escapeAttr(key)}" ${index === 0 ? "data-default=\"1\"" : ""}>`,
-            `<h3>${escapeHtml(key)}</h3>`,
-            `<p>${t("places.logCount", { count: list.length, weight: formatWeight(largest) })}</p>`,
-            `</button>`
-        ].join("");
-    }).join("");
+    const getCatchEntries = () => {
+        if (mode !== "fished") {
+            return [];
+        }
 
-    const selectPlace = (placeKey) => {
-        const list = grouped[placeKey] || [];
-        title.textContent = t("places.logsFor", { place: placeKey });
+        const grouped = groupByPlace(catches);
+        return Object.entries(grouped)
+            .map(([placeName, list]) => ({
+                id: `catch:${placeName}`,
+                source: "catch",
+                name: placeName,
+                info: t("places.sourceCatch"),
+                link: "",
+                imageData: list.flatMap((item) => Array.isArray(item.imageData) ? item.imageData : []).slice(0, 1),
+                catches: list
+            }))
+            .sort((a, b) => a.name.localeCompare(b.name, currentLanguage, { sensitivity: "base" }));
+    };
 
-        if (list.length === 0) {
-            catchesContainer.innerHTML = `<article class="list-item"><p>${t("places.noLogs")}</p></article>`;
+    const getSavedEntries = () => savedPlaces.map((item) => ({
+        ...item,
+        id: `saved:${item.id}`,
+        source: "saved",
+        catches: []
+    }));
+
+    const getEntries = () => {
+        const all = [...getCatchEntries(), ...getSavedEntries()];
+        const q = normalizeSearch(searchQuery);
+        return all.filter((entry) => normalizeSearch(entry.name).includes(q) || normalizeSearch(entry.info).includes(q));
+    };
+
+    const renderRecommendedImagePreview = () => {
+        const all = [
+            ...existingImages.map((src, index) => ({ kind: "existing", index, src })),
+            ...newImageFiles.map((file, index) => ({ kind: "new", index, file }))
+        ];
+
+        if (all.length === 0) {
+            imagePreview.innerHTML = "";
             return;
         }
 
-        catchesContainer.innerHTML = list.map((item) => renderCatchCard(item, false)).join("");
+        imagePreview.innerHTML = all.map((item) => {
+            const src = item.kind === "existing" ? item.src : URL.createObjectURL(item.file);
+            const marker = `${item.kind}:${item.index}`;
+            return [
+                `<div class="preview-thumb-wrap">`,
+                `<img src="${escapeAttr(src)}" class="thumb" alt="place-image">`,
+                `<button type="button" class="btn btn-danger place-image-remove-btn" data-image-marker="${escapeAttr(marker)}">${t("details.removePhoto")}</button>`,
+                `</div>`
+            ].join("");
+        }).join("");
     };
+
+    const resetRecommendedForm = () => {
+        idInput.value = "";
+        nameInput.value = "";
+        infoInput.value = "";
+        linkInput.value = "";
+        existingImages = [];
+        newImageFiles = [];
+        imagesInput.value = "";
+        renderRecommendedImagePreview();
+        setMessage(msg, "", true);
+        activeEntryId = "";
+        title.textContent = t("places.detailsTitle");
+        catchesContainer.innerHTML = "";
+        deleteBtn.hidden = true;
+    };
+
+    const renderEntryDetails = (entry) => {
+        activeEntryId = entry.id;
+
+        if (entry.source === "catch") {
+            title.textContent = t("places.logsFor", { place: entry.name });
+            const list = Array.isArray(entry.catches) ? entry.catches : [];
+            catchesContainer.innerHTML = list.length
+                ? list.map((item) => renderCatchCard(item, false)).join("")
+                : `<article class="list-item"><p>${t("places.noLogs")}</p></article>`;
+
+            idInput.value = "";
+            nameInput.value = entry.name;
+            infoInput.value = "";
+            linkInput.value = "";
+            existingImages = [];
+            newImageFiles = [];
+            imagesInput.value = "";
+            renderRecommendedImagePreview();
+            deleteBtn.hidden = true;
+            return;
+        }
+
+        title.textContent = t("places.savedFor", { place: entry.name });
+        const link = entry.link
+            ? `<a href="${escapeAttr(entry.link)}" target="_blank" rel="noopener">${escapeHtml(entry.link)}</a>`
+            : "-";
+        const photos = Array.isArray(entry.imageData) && entry.imageData.length > 0
+            ? entry.imageData.map((src) => `<img src="${escapeAttr(src)}" class="thumb" alt="place-photo">`).join("")
+            : `<p>${t("details.noPhotos")}</p>`;
+
+        catchesContainer.innerHTML = [
+            `<article class="list-item">`,
+            `<h3>${escapeHtml(entry.name || "-")}</h3>`,
+            `<p><strong>${t("places.recommendedInfo")}:</strong> ${escapeHtml(entry.info || "-")}</p>`,
+            `<p><strong>${t("places.recommendedLink")}:</strong> ${link}</p>`,
+            `<div class="image-preview">${photos}</div>`,
+            `</article>`
+        ].join("");
+
+        idInput.value = String(entry.id.replace("saved:", "") || "");
+        nameInput.value = String(entry.name || "");
+        infoInput.value = String(entry.info || "");
+        linkInput.value = String(entry.link || "");
+        existingImages = Array.isArray(entry.imageData) ? [...entry.imageData] : [];
+        newImageFiles = [];
+        imagesInput.value = "";
+        renderRecommendedImagePreview();
+        deleteBtn.hidden = false;
+    };
+
+    const renderLists = () => {
+        const entries = getEntries();
+        placesList.innerHTML = entries.length
+            ? entries.map((entry) => {
+                const active = activeEntryId === entry.id ? " active" : "";
+                const largest = entry.source === "catch"
+                    ? Math.max(...entry.catches.map(getLargestWeight))
+                    : 0;
+                const meta = entry.source === "catch"
+                    ? t("places.logCount", { count: entry.catches.length, weight: formatWeight(largest) })
+                    : (entry.info || "-");
+                return [
+                    `<button type="button" class="list-item place-btn place-carousel-card${active}" data-entry-id="${escapeAttr(entry.id)}">`,
+                    `<h3>${escapeHtml(entry.name)}</h3>`,
+                    `<p>${escapeHtml(meta)}</p>`,
+                    `</button>`
+                ].join("");
+            }).join("")
+            : `<article class="list-item"><p>${t("places.noPlaces")}</p></article>`;
+
+        if (!activeEntryId && entries.length > 0) {
+            renderEntryDetails(entries[0]);
+        }
+    };
+
+    const applySearch = () => {
+        searchQuery = String(searchInput.value || "").trim();
+        renderLists();
+    };
+
+    searchBtn.addEventListener("click", applySearch);
+    searchInput.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            applySearch();
+        }
+    });
 
     placesList.addEventListener("click", (event) => {
         const target = event.target;
@@ -2101,20 +2318,137 @@ async function initPlaces(user) {
             return;
         }
 
-        const placeBtn = target.closest(".place-btn");
+        const placeBtn = target.closest(".place-btn[data-entry-id]");
         if (!placeBtn) {
             return;
         }
 
-        const key = placeBtn.dataset.place || "";
-        if (key) {
-            selectPlace(key);
+        const entryId = placeBtn.getAttribute("data-entry-id") || "";
+        if (!entryId) {
+            return;
+        }
+
+        const selected = getEntries().find((item) => item.id === entryId);
+        if (!selected) {
+            return;
+        }
+
+        renderEntryDetails(selected);
+        renderLists();
+    });
+
+    imagesInput.addEventListener("change", () => {
+        const files = Array.from(imagesInput.files || []);
+        const valid = files.filter((file) => isAllowedImageFile(file));
+        if (valid.length !== files.length) {
+            setMessage(msg, t("add.invalidImage"), false);
+        }
+        newImageFiles = newImageFiles.concat(valid);
+        imagesInput.value = "";
+        renderRecommendedImagePreview();
+    });
+
+    imagePreview.addEventListener("click", (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLElement)) {
+            return;
+        }
+
+        const btn = target.closest(".place-image-remove-btn");
+        if (!btn) {
+            return;
+        }
+
+        const marker = btn.getAttribute("data-image-marker") || "";
+        const [kind, indexRaw] = marker.split(":");
+        const index = Number(indexRaw);
+        if (!Number.isInteger(index) || index < 0) {
+            return;
+        }
+
+        if (kind === "existing") {
+            existingImages.splice(index, 1);
+        } else if (kind === "new") {
+            newImageFiles.splice(index, 1);
+        }
+
+        renderRecommendedImagePreview();
+    });
+
+    form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        const id = String(idInput.value || "") || crypto.randomUUID();
+        const name = String(nameInput.value || "").trim();
+        const info = String(infoInput.value || "").trim();
+        const link = String(linkInput.value || "").trim();
+        if (!name) {
+            return;
+        }
+
+        if (saveBtn instanceof HTMLButtonElement) {
+            saveBtn.disabled = true;
+        }
+
+        try {
+            const uploaded = newImageFiles.length
+                ? await saveImages(newImageFiles, user.id, `recommended-${id}`)
+                : [];
+            const previous = savedPlaces.find((item) => String(item.id) === String(id));
+
+            const record = {
+                id,
+                category: mode,
+                userId: user.id,
+                userEmail: String(user.email || "").toLowerCase(),
+                name,
+                info,
+                link,
+                imageData: [...existingImages, ...uploaded],
+                updatedAt: new Date().toISOString(),
+                createdAt: previous?.createdAt || new Date().toISOString()
+            };
+
+            saveRecommendedPlaceRecord(record);
+            savedPlaces = getUserRecommendedPlaces(user, mode);
+            setMessage(msg, t("places.recommendedSaved"), true);
+            const fresh = savedPlaces.find((item) => String(item.id) === String(record.id));
+            if (fresh) {
+                renderEntryDetails({ ...fresh, id: `saved:${fresh.id}`, source: "saved", catches: [] });
+            }
+            renderLists();
+        } finally {
+            if (saveBtn instanceof HTMLButtonElement) {
+                saveBtn.disabled = false;
+            }
         }
     });
 
-    if (entries.length > 0) {
-        selectPlace(entries[0][0]);
-    }
+    deleteBtn.addEventListener("click", () => {
+        const id = String(idInput.value || "");
+        if (!id) {
+            return;
+        }
+
+        const confirmed = window.confirm(t("places.recommendedDeleteConfirm"));
+        if (!confirmed) {
+            return;
+        }
+
+        deleteRecommendedPlaceRecord(id);
+    savedPlaces = getUserRecommendedPlaces(user, mode);
+        setMessage(msg, t("places.recommendedDeleted"), true);
+        resetRecommendedForm();
+        renderLists();
+    });
+
+    clearBtn.addEventListener("click", () => {
+        resetRecommendedForm();
+        renderLists();
+    });
+
+    resetRecommendedForm();
+    renderLists();
 }
 
 function getCurrentUser() {
@@ -2228,6 +2562,67 @@ async function getUserCatches(userId) {
         const bDate = new Date(b.date || b.createdAt).getTime();
         return bDate - aDate;
     });
+}
+
+function getUserRecommendedPlaces(user, category = "") {
+    const userId = String(user?.id || "");
+    const userEmail = String(user?.email || "").toLowerCase();
+    const knownUsers = readStorage(STORAGE.users, []);
+    const emailByUserId = new Map(
+        knownUsers.map((entry) => [
+            String(entry?.id || ""),
+            String(entry?.email || "").toLowerCase()
+        ])
+    );
+
+    const all = readStorage(STORAGE.recommendedPlaces, []);
+    return all
+        .filter((item) => {
+            const itemCategory = String(item?.category || "wishlist");
+            const itemUserId = String(item?.userId || "");
+            const itemEmail = String(item?.userEmail || "").toLowerCase();
+            const legacyOwnerEmail = emailByUserId.get(itemUserId) || "";
+
+            if (category && itemCategory !== category) {
+                return false;
+            }
+
+            if (userId && itemUserId === userId) {
+                return true;
+            }
+            if (userEmail && itemEmail && itemEmail === userEmail) {
+                return true;
+            }
+            if (userEmail && legacyOwnerEmail && legacyOwnerEmail === userEmail) {
+                return true;
+            }
+            return false;
+        })
+        .sort((a, b) => String(a?.name || "").localeCompare(String(b?.name || ""), currentLanguage, { sensitivity: "base" }));
+}
+
+function saveRecommendedPlaceRecord(record) {
+    const list = readStorage(STORAGE.recommendedPlaces, []);
+    const index = list.findIndex((item) => String(item?.id || "") === String(record?.id || ""));
+    const payload = {
+        ...record,
+        updatedAt: new Date().toISOString(),
+        createdAt: record?.createdAt || new Date().toISOString()
+    };
+
+    if (index === -1) {
+        list.unshift(payload);
+    } else {
+        list[index] = { ...list[index], ...payload };
+    }
+
+    writeStorage(STORAGE.recommendedPlaces, list);
+}
+
+function deleteRecommendedPlaceRecord(id) {
+    const list = readStorage(STORAGE.recommendedPlaces, []);
+    const next = list.filter((item) => String(item?.id || "") !== String(id || ""));
+    writeStorage(STORAGE.recommendedPlaces, next);
 }
 
 async function saveCatch(catchRecord) {
@@ -3034,9 +3429,25 @@ function applyPageTranslations(page, user) {
             break;
         case "places":
             document.title = `${t("nav.places")} | Fishing Logbook`;
-            setText(".card h1", t("places.title"));
-            setText(".card > p", t("places.subtitle"));
-            setText("#selectedPlaceTitle", t("places.select"));
+            {
+                const mode = new URLSearchParams(window.location.search).get("mode") === "wishlist" ? "wishlist" : "fished";
+                setText(".card h1", t("places.title"));
+                setText(".card > p", t("places.subtitle"));
+                setText("#selectedPlaceTitle", t("places.detailsTitle"));
+                setText("#placeSearchBtn", `🔍 ${t("places.search")}`);
+                setPlaceholder("#placeSearchInput", t("places.searchPh"));
+                setText("#placesModeTitle", mode === "wishlist" ? t("places.wishlistModeTitle") : t("places.fishedModeTitle"));
+                setText("#recommendedEditorTitle", mode === "wishlist" ? t("places.editorWishlist") : t("places.editorFished"));
+                setText('label[for="recommendedPlaceName"]', t("places.recommendedName"));
+                setText('label[for="recommendedPlaceInfo"]', t("places.recommendedInfo"));
+                setText('label[for="recommendedPlaceLink"]', t("places.recommendedLink"));
+                setText('label[for="recommendedPlaceImages"]', t("places.recommendedPhotos"));
+                setText("#recommendedSaveBtn", t("places.recommendedSave"));
+                setText("#recommendedDeleteBtn", t("places.recommendedDelete"));
+                setText("#recommendedClearBtn", t("places.recommendedClear"));
+                setPlaceholder("#recommendedPlaceInfo", t("places.recommendedInfoPh"));
+                setPlaceholder("#recommendedPlaceLink", t("places.recommendedLinkPh"));
+            }
             break;
         default:
             break;
