@@ -204,6 +204,8 @@ const I18N = {
         "nav.places": "Places",
         "nav.placesFished": "Places I fished",
         "nav.placesWishlist": "Interesting places",
+        "nav.placesVisitedOption": "Places (where I fished)",
+        "nav.recommendedPlaces": "Recommended places",
         "nav.logout": "Logout",
         "nav.deleteAccount": "Delete account",
         "nav.home": "Home",
@@ -382,6 +384,7 @@ const I18N = {
         "places.subtitle": "Open any place to see all logs and details you wrote there.",
         "places.select": "Select a place",
         "places.search": "Search",
+        "places.addAction": "Add new place",
         "places.searchPh": "Search place...",
         "places.fishingList": "Fishing places",
         "places.fishedModeTitle": "Places where I fished",
@@ -433,6 +436,8 @@ const I18N = {
         "nav.places": "Helyszínek",
         "nav.placesFished": "Ahol horgásztam",
         "nav.placesWishlist": "Érdekes helyek",
+        "nav.placesVisitedOption": "Places (ahol voltam)",
+        "nav.recommendedPlaces": "Ajánlott helyek",
         "nav.logout": "Kijelentkezés",
         "nav.deleteAccount": "Fiók törlése",
         "nav.home": "Főoldal",
@@ -611,6 +616,7 @@ const I18N = {
         "places.subtitle": "Kattints egy helyszínre, és nézd meg az ottani teljes naplóbejegyzéseket.",
         "places.select": "Válassz helyszínt",
         "places.search": "Keresés",
+        "places.addAction": "Új hely hozzáadása",
         "places.searchPh": "Hely keresése...",
         "places.fishingList": "Horgász helyek",
         "places.fishedModeTitle": "Helyek, ahol horgásztam",
@@ -903,8 +909,11 @@ function renderNav(user) {
             `<a href="dashboard.html">${t("nav.dashboard")}${guestLabel}</a>`,
             `<a href="add-catch.html">${t("nav.addExperience")}</a>`,
             `<a href="my-cathches.html">${t("nav.logbook")}</a>`,
-            `<a href="places.html?mode=fished">${t("nav.placesFished")}</a>`,
-            `<a href="places.html?mode=wishlist">${t("nav.placesWishlist")}</a>`,
+            `<button type="button" class="btn-link nav-parent-toggle" id="placesMenuToggle" data-menu-keep-open="1" aria-expanded="false" aria-controls="placesSubmenu">${t("nav.places")}</button>`,
+            `<div class="nav-submenu" id="placesSubmenu" hidden>`,
+            `<a href="places.html?mode=fished">${t("nav.placesVisitedOption")}</a>`,
+            `<a href="places.html?mode=wishlist">${t("nav.recommendedPlaces")}</a>`,
+            `</div>`,
             `<button type="button" class="btn-link" id="changeBgBtn">${t("common.changeBg")}</button>`,
             `<button type="button" class="btn-link" id="logoutBtn">${t("nav.logout")}</button>`,
             effectiveUser.isGuest ? "" : `<div class="nav-separator" role="separator" aria-hidden="true"></div>`,
@@ -949,6 +958,17 @@ function renderNav(user) {
         if (deleteAccountBtn) {
             deleteAccountBtn.addEventListener("click", () => {
                 void deleteCurrentAccount();
+            });
+        }
+
+        const placesMenuToggle = document.getElementById("placesMenuToggle");
+        const placesSubmenu = document.getElementById("placesSubmenu");
+        if (placesMenuToggle && placesSubmenu) {
+            placesMenuToggle.addEventListener("click", (event) => {
+                event.preventDefault();
+                const willOpen = placesSubmenu.hidden;
+                placesSubmenu.hidden = !willOpen;
+                placesMenuToggle.setAttribute("aria-expanded", String(willOpen));
             });
         }
     }
@@ -1026,6 +1046,12 @@ function ensureMenuToggle(nav) {
     const closeNav = () => {
         nav.classList.remove("open");
         nav.style.display = "none";
+        nav.querySelectorAll(".nav-submenu").forEach((submenu) => {
+            submenu.hidden = true;
+        });
+        nav.querySelectorAll(".nav-parent-toggle").forEach((btn) => {
+            btn.setAttribute("aria-expanded", "false");
+        });
         toggle.setAttribute("aria-expanded", "false");
         document.removeEventListener("click", handleMenuGlobalClick);
     };
@@ -1047,13 +1073,24 @@ function ensureMenuToggle(nav) {
     };
 
     function handleMenuGlobalClick(event) {
-        if (!toggle.contains(event.target)) {
-            closeNav();
+        const target = event.target;
+        if (!(target instanceof Node)) {
+            return;
         }
+
+        if (toggle.contains(target) || nav.contains(target)) {
+            return;
+        }
+
+        closeNav();
     }
 
     // Close menu after selecting a menu action/link.
     nav.querySelectorAll("a,button").forEach((item) => {
+        if (item.getAttribute("data-menu-keep-open") === "1") {
+            return;
+        }
+
         item.addEventListener("click", () => {
             closeNav();
         });
@@ -2117,10 +2154,12 @@ async function initPlaces(user) {
 
     const placesList = document.getElementById("placesList");
     const modeTitle = document.getElementById("placesModeTitle");
-    const catchesContainer = document.getElementById("placeCatches");
-    const title = document.getElementById("selectedPlaceTitle");
+    const searchToggleBtn = document.getElementById("placeSearchToggleBtn");
+    const addToggleBtn = document.getElementById("placeAddToggleBtn");
+    const searchPanel = document.getElementById("placeSearchPanel");
     const searchInput = document.getElementById("placeSearchInput");
     const searchBtn = document.getElementById("placeSearchBtn");
+    const editorSection = document.getElementById("recommendedEditorSection");
     const form = document.getElementById("recommendedPlaceForm");
     const idInput = document.getElementById("recommendedPlaceId");
     const nameInput = document.getElementById("recommendedPlaceName");
@@ -2134,7 +2173,7 @@ async function initPlaces(user) {
     const msg = document.getElementById("recommendedPlaceMessage");
     const editorTitle = document.getElementById("recommendedEditorTitle");
 
-    if (!placesList || !modeTitle || !catchesContainer || !title || !searchInput || !searchBtn || !form || !idInput || !nameInput || !infoInput || !linkInput || !imagesInput || !imagePreview || !saveBtn || !deleteBtn || !clearBtn || !msg || !editorTitle) {
+    if (!placesList || !modeTitle || !searchToggleBtn || !addToggleBtn || !searchPanel || !searchInput || !searchBtn || !editorSection || !form || !idInput || !nameInput || !infoInput || !linkInput || !imagesInput || !imagePreview || !saveBtn || !deleteBtn || !clearBtn || !msg || !editorTitle) {
         return;
     }
 
@@ -2143,6 +2182,8 @@ async function initPlaces(user) {
 
     modeTitle.textContent = mode === "wishlist" ? t("places.wishlistModeTitle") : t("places.fishedModeTitle");
     editorTitle.textContent = mode === "wishlist" ? t("places.editorWishlist") : t("places.editorFished");
+    searchPanel.hidden = true;
+    editorSection.hidden = true;
 
     const catches = await getUserCatches(user.id);
     let savedPlaces = getUserRecommendedPlaces(user, mode);
@@ -2218,22 +2259,11 @@ async function initPlaces(user) {
         imagesInput.value = "";
         renderRecommendedImagePreview();
         setMessage(msg, "", true);
-        activeEntryId = "";
-        title.textContent = t("places.detailsTitle");
-        catchesContainer.innerHTML = "";
         deleteBtn.hidden = true;
     };
 
     const renderEntryDetails = (entry) => {
-        activeEntryId = entry.id;
-
         if (entry.source === "catch") {
-            title.textContent = t("places.logsFor", { place: entry.name });
-            const list = Array.isArray(entry.catches) ? entry.catches : [];
-            catchesContainer.innerHTML = list.length
-                ? list.map((item) => renderCatchCard(item, false)).join("")
-                : `<article class="list-item"><p>${t("places.noLogs")}</p></article>`;
-
             idInput.value = "";
             nameInput.value = entry.name;
             infoInput.value = "";
@@ -2245,23 +2275,6 @@ async function initPlaces(user) {
             deleteBtn.hidden = true;
             return;
         }
-
-        title.textContent = t("places.savedFor", { place: entry.name });
-        const link = entry.link
-            ? `<a href="${escapeAttr(entry.link)}" target="_blank" rel="noopener">${escapeHtml(entry.link)}</a>`
-            : "-";
-        const photos = Array.isArray(entry.imageData) && entry.imageData.length > 0
-            ? entry.imageData.map((src) => `<img src="${escapeAttr(src)}" class="thumb" alt="place-photo">`).join("")
-            : `<p>${t("details.noPhotos")}</p>`;
-
-        catchesContainer.innerHTML = [
-            `<article class="list-item">`,
-            `<h3>${escapeHtml(entry.name || "-")}</h3>`,
-            `<p><strong>${t("places.recommendedInfo")}:</strong> ${escapeHtml(entry.info || "-")}</p>`,
-            `<p><strong>${t("places.recommendedLink")}:</strong> ${link}</p>`,
-            `<div class="image-preview">${photos}</div>`,
-            `</article>`
-        ].join("");
 
         idInput.value = String(entry.id.replace("saved:", "") || "");
         nameInput.value = String(entry.name || "");
@@ -2276,6 +2289,13 @@ async function initPlaces(user) {
 
     const renderLists = () => {
         const entries = getEntries();
+
+        if (entries.length === 0) {
+            activeEntryId = "";
+        } else if (!entries.some((entry) => entry.id === activeEntryId)) {
+            activeEntryId = entries[0].id;
+        }
+
         placesList.innerHTML = entries.length
             ? entries.map((entry) => {
                 const active = activeEntryId === entry.id ? " active" : "";
@@ -2293,16 +2313,44 @@ async function initPlaces(user) {
                 ].join("");
             }).join("")
             : `<article class="list-item"><p>${t("places.noPlaces")}</p></article>`;
-
-        if (!activeEntryId && entries.length > 0) {
-            renderEntryDetails(entries[0]);
-        }
     };
+
+    const getEntryById = (entryId) => getEntries().find((item) => item.id === entryId);
 
     const applySearch = () => {
         searchQuery = String(searchInput.value || "").trim();
         renderLists();
     };
+
+    searchToggleBtn.addEventListener("click", () => {
+        const willOpen = searchPanel.hidden;
+        searchPanel.hidden = !searchPanel.hidden;
+        if (willOpen) {
+            searchInput.focus();
+            return;
+        }
+
+        if (searchQuery) {
+            searchInput.value = "";
+            searchQuery = "";
+            renderLists();
+        }
+    });
+
+    addToggleBtn.addEventListener("click", () => {
+        editorSection.hidden = !editorSection.hidden;
+        if (editorSection.hidden) {
+            return;
+        }
+
+        const selected = getEntryById(activeEntryId);
+        if (selected) {
+            renderEntryDetails(selected);
+            return;
+        }
+
+        resetRecommendedForm();
+    });
 
     searchBtn.addEventListener("click", applySearch);
     searchInput.addEventListener("keydown", (event) => {
@@ -2333,7 +2381,10 @@ async function initPlaces(user) {
             return;
         }
 
-        renderEntryDetails(selected);
+        activeEntryId = selected.id;
+        if (!editorSection.hidden) {
+            renderEntryDetails(selected);
+        }
         renderLists();
     });
 
@@ -2414,7 +2465,8 @@ async function initPlaces(user) {
             setMessage(msg, t("places.recommendedSaved"), true);
             const fresh = savedPlaces.find((item) => String(item.id) === String(record.id));
             if (fresh) {
-                renderEntryDetails({ ...fresh, id: `saved:${fresh.id}`, source: "saved", catches: [] });
+                activeEntryId = `saved:${fresh.id}`;
+                renderEntryDetails({ ...fresh, id: activeEntryId, source: "saved", catches: [] });
             }
             renderLists();
         } finally {
@@ -2436,7 +2488,7 @@ async function initPlaces(user) {
         }
 
         deleteRecommendedPlaceRecord(id);
-    savedPlaces = getUserRecommendedPlaces(user, mode);
+        savedPlaces = getUserRecommendedPlaces(user, mode);
         setMessage(msg, t("places.recommendedDeleted"), true);
         resetRecommendedForm();
         renderLists();
@@ -3431,9 +3483,8 @@ function applyPageTranslations(page, user) {
             document.title = `${t("nav.places")} | Fishing Logbook`;
             {
                 const mode = new URLSearchParams(window.location.search).get("mode") === "wishlist" ? "wishlist" : "fished";
-                setText(".card h1", t("places.title"));
-                setText(".card > p", t("places.subtitle"));
-                setText("#selectedPlaceTitle", t("places.detailsTitle"));
+                setText("#placeSearchToggleBtn", `🔍 ${t("places.search")}`);
+                setText("#placeAddToggleBtn", `+ ${t("places.addAction")}`);
                 setText("#placeSearchBtn", `🔍 ${t("places.search")}`);
                 setPlaceholder("#placeSearchInput", t("places.searchPh"));
                 setText("#placesModeTitle", mode === "wishlist" ? t("places.wishlistModeTitle") : t("places.fishedModeTitle"));
@@ -3447,6 +3498,16 @@ function applyPageTranslations(page, user) {
                 setText("#recommendedClearBtn", t("places.recommendedClear"));
                 setPlaceholder("#recommendedPlaceInfo", t("places.recommendedInfoPh"));
                 setPlaceholder("#recommendedPlaceLink", t("places.recommendedLinkPh"));
+                const searchToggle = document.getElementById("placeSearchToggleBtn");
+                if (searchToggle instanceof HTMLButtonElement) {
+                    searchToggle.setAttribute("aria-label", t("places.search"));
+                    searchToggle.setAttribute("title", t("places.search"));
+                }
+                const addToggle = document.getElementById("placeAddToggleBtn");
+                if (addToggle instanceof HTMLButtonElement) {
+                    addToggle.setAttribute("aria-label", t("places.addAction"));
+                    addToggle.setAttribute("title", t("places.addAction"));
+                }
             }
             break;
         default:

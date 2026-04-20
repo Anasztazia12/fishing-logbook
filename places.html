@@ -16,20 +16,21 @@
     </header>
 
     <main class="container">
-        <section class="card">
-            <h1>Fishing places</h1>
-            <p>Open any place to see all logs and details you wrote there.</p>
-            <div class="card-head place-search-row">
-                <input type="text" id="placeSearchInput" placeholder="Search place...">
-                <button type="button" id="placeSearchBtn" class="btn btn-secondary">🔍 Search</button>
+        <section class="card places-minimal-card">
+            <div class="places-toolbar-minimal">
+                <div class="places-toolbar-actions">
+                    <button type="button" id="placeSearchToggleBtn" class="btn btn-secondary btn-mini">🔍 Search</button>
+                    <button type="button" id="placeAddToggleBtn" class="btn btn-secondary btn-mini">+ Add new place</button>
+                </div>
+                <div id="placeSearchPanel" class="card-head place-search-row" hidden>
+                    <input type="text" id="placeSearchInput" placeholder="Search place...">
+                    <button type="button" id="placeSearchBtn" class="btn btn-secondary btn-mini">🔍 Search</button>
+                </div>
             </div>
-            <h2 id="placesModeTitle">Fishing places</h2>
+            <h2 id="placesModeTitle" class="visually-hidden">Fishing places</h2>
             <div id="placesList" class="list-grid place-carousel-list"></div>
 
-            <h2 id="selectedPlaceTitle">Fishing place details</h2>
-            <div id="placeCatches" class="list-grid"></div>
-
-            <section class="card recommended-editor-card">
+            <section class="card recommended-editor-card" id="recommendedEditorSection" hidden>
                 <div class="card-head">
                     <h2 id="recommendedEditorTitle">Place record</h2>
                 </div>
