@@ -1615,8 +1615,16 @@ async function initLogbook(user) {
         filterPanel.hidden = true;
     }
 
+    let didSearch = false;
+
     toggleFilterPanelBtn.addEventListener("click", () => {
-        filterPanel.hidden = !filterPanel.hidden;
+        if (filterPanel.hidden) {
+            filterPanel.hidden = false;
+            return;
+        }
+
+        didSearch = true;
+        render();
     });
 
     if (fromSave) {
@@ -1650,9 +1658,10 @@ async function initLogbook(user) {
         const formData = new FormData(form);
         const hasActiveFilters = Array.from(formData.values()).some((value) => String(value || "").trim() !== "");
         const filtered = filterCatches(catches, formData);
+        const shouldShowSearchFeedback = hasActiveFilters || didSearch;
 
-        count.hidden = !hasActiveFilters;
-        if (hasActiveFilters) {
+        count.hidden = !shouldShowSearchFeedback;
+        if (shouldShowSearchFeedback) {
             count.textContent = t("logbook.resultCount", { count: filtered.length });
             count.classList.toggle("badge-empty", filtered.length === 0);
         } else {
@@ -1661,7 +1670,7 @@ async function initLogbook(user) {
         }
 
         if (filtered.length === 0) {
-            container.innerHTML = hasActiveFilters
+            container.innerHTML = shouldShowSearchFeedback
                 ? `<article class="list-item"><p>${t("logbook.noMatch")}</p></article>`
                 : "";
             return;
@@ -1672,11 +1681,13 @@ async function initLogbook(user) {
 
     form.addEventListener("submit", (event) => {
         event.preventDefault();
+        didSearch = true;
         render();
     });
 
     clearBtn.addEventListener("click", () => {
         form.reset();
+        didSearch = false;
         render();
     });
 
