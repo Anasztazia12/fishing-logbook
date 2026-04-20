@@ -733,10 +733,22 @@ async function syncAuthState() {
 
     await new Promise((resolve) => {
         const unsubscribe = firebaseState.auth.onAuthStateChanged((authUser) => {
+            const localUser = getCurrentUser();
             if (!authUser) {
                 // Keep local and guest sessions intact when Firebase has no active auth user.
                 // Explicit logout already clears STORAGE.currentUser separately.
             } else {
+                const localEmail = String(localUser?.email || "").toLowerCase();
+                const authEmail = String(authUser.email || "").toLowerCase();
+                const shouldKeepLocalSession = Boolean(localUser?.isGuest)
+                    || (localUser && localEmail && authEmail && localEmail !== authEmail);
+
+                if (shouldKeepLocalSession) {
+                    unsubscribe();
+                    resolve();
+                    return;
+                }
+
                 localStorage.setItem(STORAGE.currentUser, JSON.stringify({
                     id: authUser.uid,
                     username: authUser.displayName || authUser.email || "User",
@@ -1533,6 +1545,7 @@ async function initAddCatch(user) {
             const newCatch = {
                 id: catchId,
                 userId: user.id,
+                userEmail: String(user.email || "").toLowerCase(),
                 date: String(data.get("catchDate") || "").trim(),
                 placeName,
                 placeLink,
@@ -2109,7 +2122,34 @@ function getCurrentUser() {
 async function getUserCatches(userId) {
     const user = getCurrentUser();
     const isGuest = Boolean(user?.isGuest);
-    const localOwn = readStorage(STORAGE.catches, []).filter((item) => item.userId === userId);
+    const userEmail = String(user?.email || "").toLowerCase();
+    const knownUsers = readStorage(STORAGE.users, []);
+    const emailByUserId = new Map(
+        knownUsers.map((entry) => [
+            String(entry?.id || ""),
+            String(entry?.email || "").toLowerCase()
+        ])
+    );
+    const localOwn = readStorage(STORAGE.catches, []).filter((item) => {
+        const itemUserId = String(item?.userId || "");
+        const itemEmail = String(item?.userEmail || "").toLowerCase();
+        const legacyOwnerEmail = emailByUserId.get(itemUserId) || "";
+
+        if (userId && itemUserId === String(userId)) {
+            return true;
+        }
+
+        if (userEmail && itemEmail && itemEmail === userEmail) {
+            return true;
+        }
+
+        // Legacy fallback: old local catches may only have a historic userId.
+        if (userEmail && legacyOwnerEmail && legacyOwnerEmail === userEmail) {
+            return true;
+        }
+
+        return false;
+    });
 
     if (isGuest) {
         const ownGuest = localOwn;
@@ -2123,12 +2163,35 @@ async function getUserCatches(userId) {
 
     if (firebaseState.enabled && firebaseState.db) {
         try {
-            const snapshot = await firebaseState.db
+            const byIdSnapshot = await firebaseState.db
                 .collection("catches")
                 .where("userId", "==", userId)
                 .get();
+            const byIdCloud = byIdSnapshot.docs.map((doc) => ({ ...doc.data() }));
 
-            const cloud = snapshot.docs.map((doc) => ({ ...doc.data() }));
+            let byEmailCloud = [];
+            if (userEmail) {
+                try {
+                    const byEmailSnapshot = await firebaseState.db
+                        .collection("catches")
+                        .where("userEmail", "==", userEmail)
+                        .get();
+                    byEmailCloud = byEmailSnapshot.docs.map((doc) => ({ ...doc.data() }));
+                } catch {
+                    byEmailCloud = [];
+                }
+            }
+
+            const cloud = [...byIdCloud];
+            const seenCloudIds = new Set(cloud.map((item) => String(item?.id || "")));
+            byEmailCloud.forEach((item) => {
+                const id = String(item?.id || "");
+                if (id && !seenCloudIds.has(id)) {
+                    cloud.push(item);
+                    seenCloudIds.add(id);
+                }
+            });
+
             const merged = [...cloud];
             const cloudIds = new Set(cloud.map((item) => item.id));
             localOwn.forEach((item) => {
@@ -2186,11 +2249,15 @@ async function saveCatch(catchRecord) {
 async function updateCatchRecord(catchRecord) {
     const user = getCurrentUser();
     const isGuest = Boolean(user?.isGuest);
+    const normalizedRecord = {
+        ...catchRecord,
+        userEmail: String(catchRecord?.userEmail || user?.email || "").toLowerCase()
+    };
 
     if (!isGuest && firebaseState.enabled && firebaseState.db) {
         try {
             await withTimeout(
-                firebaseState.db.collection("catches").doc(catchRecord.id).set(catchRecord),
+                firebaseState.db.collection("catches").doc(normalizedRecord.id).set(normalizedRecord),
                 12000,
                 "Cloud catch update timed out."
             );
@@ -2201,11 +2268,11 @@ async function updateCatchRecord(catchRecord) {
     }
 
     const catches = readStorage(STORAGE.catches, []);
-    const index = catches.findIndex((item) => item.id === catchRecord.id);
+    const index = catches.findIndex((item) => item.id === normalizedRecord.id);
     if (index === -1) {
-        catches.unshift(catchRecord);
+        catches.unshift(normalizedRecord);
     } else {
-        catches[index] = catchRecord;
+        catches[index] = normalizedRecord;
     }
     writeStorage(STORAGE.catches, catches);
 }
