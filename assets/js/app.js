@@ -122,9 +122,56 @@ function applySavedBackground() {
     }
 }
 
+function ensureBrandIcon() {
+    const brand = document.querySelector(".brand");
+    if (!brand || brand.querySelector(".brand-icon")) {
+        return;
+    }
+
+    const icon = document.createElement("img");
+    icon.src = "assets/images/icon.png";
+    icon.alt = "Fishing Logbook Icon";
+    icon.className = "brand-icon";
+
+    const label = brand.querySelector("span");
+    if (label) {
+        brand.prepend(icon);
+        return;
+    }
+
+    const text = String(brand.textContent || "").trim() || "Fishing Logbook";
+    brand.textContent = "";
+    const textNode = document.createElement("span");
+    textNode.textContent = text;
+    brand.append(icon, textNode);
+}
+
+function ensureSectionIcons() {
+    const headings = document.querySelectorAll(
+        "main .card > h1, main .card > .card-head > h1, main .card > .card-head > h2"
+    );
+
+    headings.forEach((heading) => {
+        if (heading.querySelector(".section-icon")) {
+            return;
+        }
+
+        if (heading.querySelector("img")) {
+            return;
+        }
+
+        const icon = document.createElement("img");
+        icon.src = "assets/images/icon.png";
+        icon.alt = "Fishing Logbook Icon";
+        icon.className = "section-icon";
+        heading.prepend(icon);
+    });
+}
+
 // SINGLE DOMContentLoaded HANDLER FOR ALL INIT
 document.addEventListener("DOMContentLoaded", () => {
     applySavedBackground();
+    ensureBrandIcon();
     // Ensure topbar controls exist immediately on public pages as well.
     const nav = document.getElementById("mainNav");
     if (nav) {
@@ -385,6 +432,8 @@ const I18N = {
         "places.select": "Select a place",
         "places.search": "Search",
         "places.addAction": "Add new place",
+        "places.emptyFishedLabel": "Place (where I fished)",
+        "places.emptyRecommendedLabel": "Recommend Places",
         "places.searchPh": "Search place...",
         "places.fishingList": "Fishing places",
         "places.fishedModeTitle": "Places where I fished",
@@ -617,6 +666,8 @@ const I18N = {
         "places.select": "Válassz helyszínt",
         "places.search": "Keresés",
         "places.addAction": "Új hely hozzáadása",
+        "places.emptyFishedLabel": "Helyek (ahol horgásztam)",
+        "places.emptyRecommendedLabel": "Ajánlott helyek",
         "places.searchPh": "Hely keresése...",
         "places.fishingList": "Horgász helyek",
         "places.fishedModeTitle": "Helyek, ahol horgásztam",
@@ -678,6 +729,7 @@ async function bootstrapApp() {
     renderNav(user);
     protectPage(page, user);
     applyPageTranslations(page, user);
+    ensureSectionIcons();
 
     switch (page) {
         case "index":
@@ -1693,6 +1745,7 @@ async function initLogbook(user) {
     const closeModalBtn = document.getElementById("closeLogbookDetails");
     const filterPanel = document.getElementById("filterPanel");
     const toggleFilterPanelBtn = document.getElementById("toggleFilterPanel");
+    const listCard = container?.closest(".card");
 
     if (!form || !clearBtn || !container || !modal || !modalContent || !closeModalBtn || !filterPanel || !toggleFilterPanelBtn) {
         return;
@@ -1770,9 +1823,15 @@ async function initLogbook(user) {
             container.innerHTML = shouldShowSearchFeedback
                 ? `<article class="list-item"><p>${t("logbook.noMatch")}</p></article>`
                 : "";
+            if (listCard) {
+                listCard.hidden = !shouldShowSearchFeedback;
+            }
             return;
         }
 
+        if (listCard) {
+            listCard.hidden = false;
+        }
         container.innerHTML = filtered.map((item) => renderCatchCard(item, false)).join("");
     };
 
@@ -2312,7 +2371,13 @@ async function initPlaces(user) {
                     `</button>`
                 ].join("");
             }).join("")
-            : `<article class="list-item"><p>${t("places.noPlaces")}</p></article>`;
+            : [
+                `<article class="list-item places-empty-state">`,
+                `<p class="places-empty-option">${escapeHtml(t("places.emptyFishedLabel"))}</p>`,
+                `<p class="places-empty-option">${escapeHtml(t("places.emptyRecommendedLabel"))}</p>`,
+                `<p>${t("places.noPlaces")}</p>`,
+                `</article>`
+            ].join("");
     };
 
     const getEntryById = (entryId) => getEntries().find((item) => item.id === entryId);
@@ -2521,13 +2586,14 @@ async function getUserCatches(userId) {
     const isGuest = Boolean(user?.isGuest);
     const userEmail = String(user?.email || "").toLowerCase();
     const knownUsers = readStorage(STORAGE.users, []);
+    const localAll = readStorage(STORAGE.catches, []);
     const emailByUserId = new Map(
         knownUsers.map((entry) => [
             String(entry?.id || ""),
             String(entry?.email || "").toLowerCase()
         ])
     );
-    const localOwn = readStorage(STORAGE.catches, []).filter((item) => {
+    const localOwn = localAll.filter((item) => {
         const itemUserId = String(item?.userId || "");
         const itemEmail = String(item?.userEmail || "").toLowerCase();
         const legacyOwnerEmail = emailByUserId.get(itemUserId) || "";
@@ -2545,11 +2611,20 @@ async function getUserCatches(userId) {
             return true;
         }
 
+        // Legacy fallback: very old local records could miss owner metadata.
+        if (!itemUserId && !itemEmail && (userId || userEmail)) {
+            return true;
+        }
+
         return false;
     });
 
+    // If strict ownership matching finds nothing but local data exists,
+    // fall back to local records so users can still access previously saved data.
+    const localVisible = localOwn.length > 0 ? localOwn : localAll;
+
     if (isGuest) {
-        const ownGuest = localOwn;
+        const ownGuest = localVisible;
 
         return ownGuest.sort((a, b) => {
             const aDate = new Date(a.date || a.createdAt).getTime();
@@ -2591,7 +2666,7 @@ async function getUserCatches(userId) {
 
             const merged = [...cloud];
             const cloudIds = new Set(cloud.map((item) => item.id));
-            localOwn.forEach((item) => {
+            localVisible.forEach((item) => {
                 if (!cloudIds.has(item.id)) {
                     merged.push(item);
                 }
@@ -2607,7 +2682,7 @@ async function getUserCatches(userId) {
         }
     }
 
-    const own = localOwn;
+    const own = localVisible;
 
     return own.sort((a, b) => {
         const aDate = new Date(a.date || a.createdAt).getTime();

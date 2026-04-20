@@ -51,10 +51,19 @@ body {
 	transform: translateX(-50%);
 }
 .brand-icon {
-	height: 50px;
+	height: 56px;
 	width: auto;
 	vertical-align: middle;
 	flex-shrink: 0;
+}
+
+.section-icon {
+	width: 28px;
+	height: 28px;
+	object-fit: contain;
+	vertical-align: middle;
+	margin-right: 0.4rem;
+	transform: translateY(-1px);
 }
 
 .hero-actions .hero-btn {
@@ -608,6 +617,16 @@ body[data-page="dashboard"] .dashboard-grid {
 	display: inline-block;
 	margin: 0 0 0 0.35rem;
 	vertical-align: middle;
+}
+
+.places-empty-state {
+	display: grid;
+	gap: 0.35rem;
+}
+
+.places-empty-option {
+	font-weight: 700;
+	margin: 0;
 }
 
 .nav-card:hover {
@@ -1185,7 +1204,12 @@ select:focus {
 	}
 
 	.brand-icon {
-		height: 42px;
+		height: 46px;
+	}
+
+	.section-icon {
+		width: 24px;
+		height: 24px;
 	}
 
 	.card-icon-inline {
@@ -1267,7 +1291,12 @@ select:focus {
 	}
 
 	.brand-icon {
-		height: 36px;
+		height: 40px;
+	}
+
+	.section-icon {
+		width: 22px;
+		height: 22px;
 	}
 
 	.card-icon-inline {
