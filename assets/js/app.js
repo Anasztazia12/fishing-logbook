@@ -3397,11 +3397,11 @@ function applyPageTranslations(page, user) {
             setText(".intro-card p", t("dashboard.choose"));
             const cards = document.querySelectorAll(".dashboard-grid .nav-card");
             if (cards[0]) {
-                setText("h2", t("dashboard.card.addTitle"), cards[0]);
+                setText("h2 .card-title-text", t("dashboard.card.addTitle"), cards[0]);
                 setText("p", t("dashboard.card.addText"), cards[0]);
             }
             if (cards[1]) {
-                setText("h2", t("dashboard.card.logbookTitle"), cards[1]);
+                setText("h2 .card-title-text", t("dashboard.card.logbookTitle"), cards[1]);
                 setText("p", t("dashboard.card.logbookText"), cards[1]);
             }
             if (cards[2]) {
