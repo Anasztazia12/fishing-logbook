@@ -210,7 +210,8 @@ const STORAGE = {
 
 const SUPABASE_DEFAULT_CONFIG = {
     url: "",
-    anonKey: ""
+    anonKey: "",
+    storageBucket: "fish-image"
 };
 let SUPABASE_CONFIG = { ...SUPABASE_DEFAULT_CONFIG };
 let supabaseClient = null;
@@ -791,7 +792,8 @@ async function loadRuntimeSupabaseConfig() {
     SUPABASE_CONFIG = {
         ...SUPABASE_DEFAULT_CONFIG,
         url: String(envVars.SUPABASE_URL || windowVars.SUPABASE_URL || localVars.SUPABASE_URL || "").trim(),
-        anonKey: String(envVars.SUPABASE_ANON_KEY || windowVars.SUPABASE_ANON_KEY || localVars.SUPABASE_ANON_KEY || "").trim()
+        anonKey: String(envVars.SUPABASE_ANON_KEY || windowVars.SUPABASE_ANON_KEY || localVars.SUPABASE_ANON_KEY || "").trim(),
+        storageBucket: String(envVars.SUPABASE_STORAGE_BUCKET || windowVars.SUPABASE_STORAGE_BUCKET || localVars.SUPABASE_STORAGE_BUCKET || SUPABASE_DEFAULT_CONFIG.storageBucket).trim()
     };
 }
 
@@ -825,7 +827,8 @@ function getWindowRuntimeVars() {
     try {
         return {
             SUPABASE_URL: String(window.__FLB_SUPABASE_URL__ || ""),
-            SUPABASE_ANON_KEY: String(window.__FLB_SUPABASE_ANON_KEY__ || "")
+            SUPABASE_ANON_KEY: String(window.__FLB_SUPABASE_ANON_KEY__ || ""),
+            SUPABASE_STORAGE_BUCKET: String(window.__FLB_SUPABASE_STORAGE_BUCKET__ || "")
         };
     } catch {
         return {};
@@ -836,7 +839,8 @@ function getLocalRuntimeVars() {
     try {
         return {
             SUPABASE_URL: String(localStorage.getItem("flb_supabase_url") || ""),
-            SUPABASE_ANON_KEY: String(localStorage.getItem("flb_supabase_anon_key") || "")
+            SUPABASE_ANON_KEY: String(localStorage.getItem("flb_supabase_anon_key") || ""),
+            SUPABASE_STORAGE_BUCKET: String(localStorage.getItem("flb_supabase_storage_bucket") || "")
         };
     } catch {
         return {};
@@ -924,9 +928,92 @@ function catchFromSupabase(row) {
         notes: row.notes || "",
         waterTemp: (row.water_temp !== undefined && row.water_temp !== null) ? Number(row.water_temp) : null,
         weather: row.weather || "",
-        imageData: Array.isArray(row.image_urls) ? row.image_urls : [],
+        imageData: Array.isArray(row.image_urls) ? row.image_urls.map(normalizeImageEntry).filter(Boolean) : [],
         createdAt: new Date().toISOString()
     };
+}
+
+function normalizeImageEntry(entry) {
+    if (!entry) {
+        return null;
+    }
+
+    if (typeof entry === "string") {
+        if (entry.startsWith("http://") || entry.startsWith("https://") || entry.startsWith("data:")) {
+            return { src: entry };
+        }
+
+        return { path: entry };
+    }
+
+    if (typeof entry === "object") {
+        const path = String(entry.path || entry.storagePath || "").trim();
+        const src = String(entry.signedUrl || entry.url || entry.src || "").trim();
+        if (!path && !src) {
+            return null;
+        }
+
+        return { path, src };
+    }
+
+    return null;
+}
+
+function getImageEntrySrc(entry) {
+    const normalized = normalizeImageEntry(entry);
+    return normalized?.src || normalized?.path || "";
+}
+
+async function getSignedStorageUrl(path) {
+    if (!supabaseClient || !SUPABASE_CONFIG.storageBucket || !path) {
+        return "";
+    }
+
+    try {
+        const { data, error } = await supabaseClient.storage
+            .from(SUPABASE_CONFIG.storageBucket)
+            .createSignedUrl(path, 60 * 60 * 24);
+
+        if (error) {
+            return "";
+        }
+
+        return String(data?.signedUrl || "");
+    } catch {
+        return "";
+    }
+}
+
+async function enrichCatchImages(catchRecord) {
+    const imageData = Array.isArray(catchRecord?.imageData) ? catchRecord.imageData : [];
+    const resolved = await Promise.all(imageData.map(async (entry) => {
+        const normalized = normalizeImageEntry(entry);
+        if (!normalized) {
+            return null;
+        }
+
+        if (normalized.src && (!normalized.path || normalized.src.startsWith("data:"))) {
+            return normalized;
+        }
+
+        if (normalized.path) {
+            const signedUrl = await getSignedStorageUrl(normalized.path);
+            if (signedUrl) {
+                return { path: normalized.path, src: signedUrl };
+            }
+        }
+
+        return normalized.src ? normalized : null;
+    }));
+
+    return {
+        ...catchRecord,
+        imageData: resolved.filter(Boolean)
+    };
+}
+
+async function enrichCatchCollection(catches) {
+    return Promise.all((Array.isArray(catches) ? catches : []).map((item) => enrichCatchImages(item)));
 }
 
 async function syncAuthState() {
@@ -2140,9 +2227,12 @@ function renderCatchDetailsMarkup(selected) {
     const images = imagesArray.length
         ? [
             `<div class="photo-viewer" data-photo-viewer="1">`,
-            `<img src="${escapeAttr(imagesArray[0])}" alt="Catch photo" class="photo-main" data-photo-main="1">`,
+            `<img src="${escapeAttr(getImageEntrySrc(imagesArray[0]))}" alt="Catch photo" class="photo-main" data-photo-main="1">`,
             `<div class="photo-thumbs">`,
-            imagesArray.map((src, index) => `<button type="button" class="photo-thumb-btn${index === 0 ? " active" : ""}" data-photo-src="${escapeAttr(src)}"><img src="${escapeAttr(src)}" alt="Catch photo ${index + 1}" class="thumb"></button>`).join(""),
+            imagesArray.map((entry, index) => {
+                const src = getImageEntrySrc(entry);
+                return `<button type="button" class="photo-thumb-btn${index === 0 ? " active" : ""}" data-photo-src="${escapeAttr(src)}"><img src="${escapeAttr(src)}" alt="Catch photo ${index + 1}" class="thumb"></button>`;
+            }).join(""),
             `</div>`,
             `</div>`
         ].join("")
@@ -2354,7 +2444,7 @@ async function initPlaces(user) {
         }
 
         imagePreview.innerHTML = all.map((item) => {
-            const src = item.kind === "existing" ? item.src : URL.createObjectURL(item.file);
+            const src = item.kind === "existing" ? getImageEntrySrc(item.src) : URL.createObjectURL(item.file);
             const marker = `${item.kind}:${item.index}`;
             return [
                 `<div class="preview-thumb-wrap">`,
@@ -2681,11 +2771,11 @@ async function getUserCatches(userId) {
     const localVisible = localOwn.length > 0 ? localOwn : localAll;
 
     if (isGuest) {
-        return localVisible.sort((a, b) => {
+        return enrichCatchCollection(localVisible.sort((a, b) => {
             const aDate = new Date(a.date || a.createdAt).getTime();
             const bDate = new Date(b.date || b.createdAt).getTime();
             return bDate - aDate;
-        });
+        }));
     }
 
     if (supabaseClient && userId) {
@@ -2705,22 +2795,22 @@ async function getUserCatches(userId) {
                     }
                 });
 
-                return cloud.sort((a, b) => {
+                return enrichCatchCollection(cloud.sort((a, b) => {
                     const aDate = new Date(a.date || a.createdAt).getTime();
                     const bDate = new Date(b.date || b.createdAt).getTime();
                     return bDate - aDate;
-                });
+                }));
             }
         } catch {
             // Falls through to local data if cloud query fails.
         }
     }
 
-    return localVisible.sort((a, b) => {
+    return enrichCatchCollection(localVisible.sort((a, b) => {
         const aDate = new Date(a.date || a.createdAt).getTime();
         const bDate = new Date(b.date || b.createdAt).getTime();
         return bDate - aDate;
-    });
+    }));
 }
 
 function getUserRecommendedPlaces(user, category = "") {
@@ -2994,7 +3084,45 @@ async function saveImages(files, userId, catchId, options = {}) {
         ? await compressImageFiles(files)
         : files;
 
-    return filesToBase64(uploadFiles);
+    if (supabaseClient && SUPABASE_CONFIG.storageBucket && userId) {
+        try {
+            return await uploadToSupabaseStorage(uploadFiles, userId, catchId);
+        } catch (error) {
+            console.warn("Supabase storage upload failed, using local fallback.", error);
+        }
+    }
+
+    const base64Files = await filesToBase64(uploadFiles);
+    return base64Files.map((src) => ({ src }));
+}
+
+async function uploadToSupabaseStorage(files, userId, catchId) {
+    const uploaded = [];
+
+    for (let index = 0; index < files.length; index += 1) {
+        const file = files[index];
+        const safeName = String(file.name || `image-${index}`).replace(/[^a-zA-Z0-9._-]/g, "_");
+        const filePath = `${userId}/${catchId}/${Date.now()}-${index}-${safeName}`;
+
+        const { error } = await supabaseClient.storage
+            .from(SUPABASE_CONFIG.storageBucket)
+            .upload(filePath, file, {
+                cacheControl: "3600",
+                upsert: false,
+                contentType: file.type || undefined
+            });
+
+        if (error) {
+            throw error;
+        }
+
+        uploaded.push({
+            path: filePath,
+            src: await getSignedStorageUrl(filePath)
+        });
+    }
+
+    return uploaded;
 }
 
 function compressImageFiles(files) {
@@ -3145,16 +3273,16 @@ function renderImagePreviews(files, container, removable = false, onError = null
     Array.from(files).forEach((file, index) => {
         const source = typeof file === "string"
             ? file
-            : URL.createObjectURL(file);
+            : (file instanceof File ? URL.createObjectURL(file) : getImageEntrySrc(file));
 
         const img = document.createElement("img");
         img.src = source;
         img.className = "thumb";
         img.alt = typeof file === "string"
             ? `photo-${index + 1}`
-            : String(file.name || `photo-${index + 1}`);
+            : String(file?.name || `photo-${index + 1}`);
 
-        if (typeof file !== "string") {
+        if (file instanceof File) {
             img.addEventListener("load", () => {
                 URL.revokeObjectURL(source);
             }, { once: true });
@@ -3260,7 +3388,7 @@ function renderCatchCard(item, compact) {
 
     const largest = getLargestWeight(item);
     const imageList = Array.isArray(item.imageData) ? item.imageData : [];
-    const coverImage = imageList[0] || "";
+    const coverImage = getImageEntrySrc(imageList[0]);
     const fishItems = Array.isArray(item.fishItems) ? item.fishItems : [];
     const fishSummary = fishItems.length
         ? fishItems.map((fish) => escapeHtml(String(fish.type || "-"))).join(", ")
