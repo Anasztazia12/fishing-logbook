@@ -299,6 +299,7 @@ const I18N = {
         "register.passwordInvalid": "Password must be 8-20 chars, include at least 1 letter and 1 number, and use only allowed symbols.",
         "register.firebaseFallback": "Cloud registration is unavailable right now. Your account was created locally.",
         "register.cloudUnavailable": "Cloud registration is currently unavailable. Please try again later.",
+        "register.supabaseConfigMissing": "Supabase config is missing. Add SUPABASE_URL and SUPABASE_ANON_KEY to .env, then hard refresh.",
         "register.verificationSent": "Welcome, {name}! A confirmation email has been sent to {email}.",
         "register.success": "Registration successful. Redirecting...",
         "register.failed": "Registration failed.",
@@ -535,6 +536,7 @@ const I18N = {
         "register.passwordInvalid": "A jelszó legyen 8-20 karakter, legyen benne legalább 1 betű és 1 szám, és csak engedélyezett karaktereket használj.",
         "register.firebaseFallback": "A felhős regisztráció most nem elérhető. A fiók helyben létrejött.",
         "register.cloudUnavailable": "A felhős regisztráció most nem elérhető. Próbáld újra később.",
+        "register.supabaseConfigMissing": "Hianyzik a Supabase config. Add meg a SUPABASE_URL es SUPABASE_ANON_KEY ertekeket a .env-ben, majd csinalj hard refresh-t.",
         "register.verificationSent": "Üdv, {name}! Visszaigazoló emailt küldtünk ide: {email}.",
         "register.success": "Sikeres regisztráció. Átirányítás...",
         "register.failed": "A regisztráció sikertelen.",
@@ -784,10 +786,12 @@ function injectScript(src) {
 
 async function loadRuntimeSupabaseConfig() {
     const envVars = await loadDotEnvVars();
+    const windowVars = getWindowRuntimeVars();
+    const localVars = getLocalRuntimeVars();
     SUPABASE_CONFIG = {
         ...SUPABASE_DEFAULT_CONFIG,
-        url: String(envVars.SUPABASE_URL || "").trim(),
-        anonKey: String(envVars.SUPABASE_ANON_KEY || "").trim()
+        url: String(envVars.SUPABASE_URL || windowVars.SUPABASE_URL || localVars.SUPABASE_URL || "").trim(),
+        anonKey: String(envVars.SUPABASE_ANON_KEY || windowVars.SUPABASE_ANON_KEY || localVars.SUPABASE_ANON_KEY || "").trim()
     };
 }
 
@@ -797,13 +801,43 @@ async function loadDotEnvVars() {
     }
 
     try {
-        const response = await fetch(".env", { cache: "no-store" });
-        if (!response.ok) {
-            return {};
+        const candidates = [".env", "/.env", "env.local", "/env.local"];
+        for (const path of candidates) {
+            const response = await fetch(path, { cache: "no-store" });
+            if (!response.ok) {
+                continue;
+            }
+
+            const envText = await response.text();
+            const parsed = parseDotEnv(envText);
+            if (parsed.SUPABASE_URL || parsed.SUPABASE_ANON_KEY) {
+                return parsed;
+            }
         }
 
-        const envText = await response.text();
-        return parseDotEnv(envText);
+        return {};
+    } catch {
+        return {};
+    }
+}
+
+function getWindowRuntimeVars() {
+    try {
+        return {
+            SUPABASE_URL: String(window.__FLB_SUPABASE_URL__ || ""),
+            SUPABASE_ANON_KEY: String(window.__FLB_SUPABASE_ANON_KEY__ || "")
+        };
+    } catch {
+        return {};
+    }
+}
+
+function getLocalRuntimeVars() {
+    try {
+        return {
+            SUPABASE_URL: String(localStorage.getItem("flb_supabase_url") || ""),
+            SUPABASE_ANON_KEY: String(localStorage.getItem("flb_supabase_anon_key") || "")
+        };
     } catch {
         return {};
     }
@@ -851,6 +885,10 @@ function initSupabase() {
     } catch {
         supabaseClient = null;
     }
+}
+
+function hasSupabaseRuntimeConfig() {
+    return Boolean(SUPABASE_CONFIG.url && SUPABASE_CONFIG.anonKey);
 }
 
 function catchToSupabase(record) {
@@ -1316,7 +1354,7 @@ async function initRegister() {
                 return;
             }
         } else {
-            setMessage(msg, t("register.cloudUnavailable"), false);
+            setMessage(msg, hasSupabaseRuntimeConfig() ? t("register.cloudUnavailable") : t("register.supabaseConfigMissing"), false);
             return;
         }
 

@@ -11,7 +11,7 @@ It helps anglers quickly record fishing sessions (place, fish details, photos, n
 - [Pages and Purpose](#pages-and-purpose)
 - [Project Structure](#project-structure)
 - [Data Storage (localStorage)](#data-storage-localstorage)
-- [Firebase Integration (Optional)](#firebase-integration-optional)
+- [Supabase Integration](#supabase-integration)
 - [Run Locally](#run-locally)
 - [Manual Test Checklist](#manual-test-checklist)
 - [Screenshots](#screenshots)
@@ -26,7 +26,7 @@ Primary goals:
 - Fast data entry flow that works well in real outdoor usage
 - Responsive UI for desktop and mobile
 - Bilingual interface (English and Hungarian)
-- localStorage-first behavior with optional Firebase support
+- localStorage fallback with Supabase cloud sync
 
 Current focus:
 
@@ -42,7 +42,7 @@ Current focus:
 - Registration with username, email, and password
 - Login
 - Guest mode
-- Password reset flow (Firebase or local fallback)
+- Password reset flow (Supabase email reset or local fallback)
 
 ### 2. Dashboard
 
@@ -121,22 +121,33 @@ Used keys:
 
 Note: This project is currently a prototype-style client-side app. Local password storage is for demo/development behavior only.
 
-## Firebase Integration (Optional)
+## Supabase Integration
 
-If Firebase SDK loads and config is valid, the app can use:
+The app uses Supabase for:
 
-- Auth: login and registration
-- Firestore: catches storage
-- Storage: image uploads
+- Auth: registration, login, logout, password reset
+- Postgres table (`public.catches`): catch storage
+- RLS policies: user can access only own rows
 
 If cloud operations fail, the app falls back to localStorage where possible.
+
+Required local runtime config (`.env` in project root):
+
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
+
+Notes:
+
+- `.env` is ignored by git (`.gitignore`), so secrets stay local.
+- Some static servers block dotfiles. If cloud registration shows unavailable, do a hard refresh and verify `.env` is served.
 
 ## Run Locally
 
 1. Clone or download the repository.
 2. Open the project folder in VS Code.
-3. Open `index.html` directly in a browser, or use a local static server (recommended).
-4. Register, login, or continue as guest.
+3. Use a local static server (recommended), then open `index.html`.
+4. Create `.env` based on `.env.example` and fill Supabase values.
+5. Register, login, or continue as guest.
 
 ## Manual Test Checklist
 
@@ -163,7 +174,7 @@ Recommended checks before release:
 
 ## Deployment
 
-The app is static and can be hosted on GitHub Pages or Firebase Hosting.
+The app is static and can be hosted on GitHub Pages or any static hosting.
 
 ### GitHub Pages
 
@@ -173,14 +184,6 @@ The app is static and can be hosted on GitHub Pages or Firebase Hosting.
 4. Choose Deploy from a branch.
 5. Select `main` and `/ (root)`.
 6. Save and wait for publication.
-
-### Firebase Hosting
-
-1. `firebase login`
-2. `firebase init hosting`
-3. Set public directory to `.`
-4. Choose `No` for single-page app mode
-5. `firebase deploy`
 
 ## Security Notes
 
@@ -192,7 +195,7 @@ For production usage, strongly recommended:
 - Password hashing with modern algorithms and salts
 - Server-side validation
 - HTTPS-only deployment
-- Proper Firestore/Storage rules
+- Proper Supabase RLS/storage policies
 
 ## Future Improvements
 
