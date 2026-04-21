@@ -211,7 +211,7 @@ const STORAGE = {
 const SUPABASE_DEFAULT_CONFIG = {
     url: "",
     anonKey: "",
-    storageBucket: "fish-image"
+    storageBucket: "fish, image"
 };
 let SUPABASE_CONFIG = { ...SUPABASE_DEFAULT_CONFIG };
 let supabaseClient = null;
@@ -1862,7 +1862,7 @@ async function initAddCatch(user) {
             imagePreview.innerHTML = "";
             selectedImages = [];
             setTimeout(() => {
-                window.location.href = "my-cathches.html?fromSave=1";
+                window.location.href = `my-cathches.html?fromSave=1&savedCatchId=${encodeURIComponent(catchId)}`;
             }, 800);
         } catch (error) {
             console.error("Catch save failed", error);
@@ -1897,6 +1897,7 @@ async function initLogbook(user) {
 
     const quick = new URLSearchParams(window.location.search).get("quick");
     const fromSave = new URLSearchParams(window.location.search).get("fromSave") === "1";
+    const savedCatchId = new URLSearchParams(window.location.search).get("savedCatchId") || "";
     if (quick === "caught") {
         const fishMinInput = document.getElementById("filterFishMin");
         if (fishMinInput) {
@@ -1907,7 +1908,7 @@ async function initLogbook(user) {
         filterPanel.hidden = true;
     }
 
-    let didSearch = false;
+    let didSearch = fromSave;
 
     toggleFilterPanelBtn.addEventListener("click", () => {
         if (filterPanel.hidden) {
@@ -1924,6 +1925,7 @@ async function initLogbook(user) {
     }
 
     let catches = await getUserCatches(user.id);
+    let focusedSavedCatch = false;
 
     const openDetailsModal = (catchId) => {
         const selected = catches.find((item) => item.id === catchId);
@@ -1946,11 +1948,27 @@ async function initLogbook(user) {
         catches = await getUserCatches(user.id);
     };
 
+    const focusSavedCatchCard = () => {
+        if (!savedCatchId || focusedSavedCatch) {
+            return;
+        }
+
+        const savedCard = container.querySelector(`[data-catch-id="${CSS.escape(savedCatchId)}"]`);
+        if (!(savedCard instanceof HTMLElement)) {
+            return;
+        }
+
+        focusedSavedCatch = true;
+        savedCard.classList.add("just-saved");
+        savedCard.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+    };
+
     const render = () => {
         const formData = new FormData(form);
         const hasActiveFilters = Array.from(formData.values()).some((value) => String(value || "").trim() !== "");
         const filtered = filterCatches(catches, formData);
         const shouldShowSearchFeedback = hasActiveFilters || didSearch;
+        const shouldShowResults = filtered.length > 0 || shouldShowSearchFeedback;
 
         if (count) {
             count.hidden = !shouldShowSearchFeedback;
@@ -1968,7 +1986,7 @@ async function initLogbook(user) {
                 ? `<article class="list-item"><p>${t("logbook.noMatch")}</p></article>`
                 : "";
             if (listCard) {
-                listCard.hidden = !shouldShowSearchFeedback;
+                listCard.hidden = !shouldShowResults;
             }
             return;
         }
@@ -1977,6 +1995,7 @@ async function initLogbook(user) {
             listCard.hidden = false;
         }
         container.innerHTML = filtered.map((item) => renderCatchCard(item, false)).join("");
+        focusSavedCatchCard();
     };
 
     form.addEventListener("submit", (event) => {
@@ -2072,6 +2091,10 @@ async function initLogbook(user) {
             closeDetailsModal();
         }
     });
+
+    if (catches.length > 0) {
+        didSearch = true;
+    }
 
     render();
 }

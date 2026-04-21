@@ -860,8 +860,18 @@ select:focus {
 }
 
 .logbook-card-thumb {
-	height: 180px;
+	height: 220px;
+	width: 100%;
+	object-fit: cover;
+	display: block;
+	border-radius: 12px;
 	margin-bottom: 0.55rem;
+}
+
+.logbook-carousel-list .list-item.just-saved {
+	border-color: rgba(122, 78, 43, 0.75);
+	box-shadow: 0 0 0 3px rgba(122, 78, 43, 0.18), 0 16px 30px rgba(37, 49, 29, 0.24);
+	transform: translateY(-2px);
 }
 
 .fine-print {
