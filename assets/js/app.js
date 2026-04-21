@@ -147,6 +147,11 @@ function ensureBrandIcon() {
 }
 
 function ensureSectionIcons() {
+    const page = String(document.body?.dataset?.page || "");
+    if (page === "login") {
+        return;
+    }
+
     const headings = document.querySelectorAll(
         "main .card > h1, main .card > .card-head > h1, main .card > .card-head > h2"
     );
@@ -203,15 +208,17 @@ const STORAGE = {
     language: "flb_language"
 };
 
-const FIREBASE_CONFIG = {
-    apiKey: "AIzaSyCBLFecNN1GGyAI3XotVZWwz8HO8PK-Jzo",
-    authDomain: "fishing-logbook-a8851.firebaseapp.com",
-    projectId: "fishing-logbook-a8851",
-    storageBucket: "fishing-logbook-a8851.firebasestorage.app",
-    messagingSenderId: "151846552983",
-    appId: "1:151846552983:web:2d6dc9640e3292b010f0d2",
-    measurementId: "G-ZK5QXB7B8P"
+const FIREBASE_DEFAULT_CONFIG = {
+    apiKey: "",
+    authDomain: "fishing-logbook-5d1a7.firebaseapp.com",
+    projectId: "fishing-logbook-5d1a7",
+    storageBucket: "fishing-logbook-5d1a7.firebasestorage.app",
+    messagingSenderId: "435799948302",
+    appId: "1:435799948302:web:c1086b66ede8731806905f",
+    measurementId: "G-HPJG5VMG36"
 };
+
+let FIREBASE_CONFIG = { ...FIREBASE_DEFAULT_CONFIG };
 
 const FIREBASE_SDK_URLS = [
     "https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js",
@@ -361,6 +368,8 @@ const I18N = {
         "add.addFishRow": "Add fish row",
         "add.uploadPhotos": "Upload photos",
         "add.uploadCamera": "Take photo with phone camera",
+        "add.compressImages": "Compress photos before upload (recommended)",
+        "add.compressHint": "Reduces image size and speeds up saving.",
         "add.notes": "Notes",
         "add.notesPh": "What happened on this fishing trip?",
         "add.save": "Save fishing result",
@@ -595,6 +604,8 @@ const I18N = {
         "add.addFishRow": "Hal sor hozzáadása",
         "add.uploadPhotos": "Fotók feltöltése",
         "add.uploadCamera": "Fotó készítése telefon kamerával",
+        "add.compressImages": "Fotók tömörítése feltöltés előtt (ajánlott)",
+        "add.compressHint": "Csökkenti a képek méretét, és gyorsítja a mentést.",
         "add.notes": "Jegyzet",
         "add.notesPh": "Mi történt ezen a horgászaton?",
         "add.save": "Horgászati eredmény mentése",
@@ -719,6 +730,7 @@ let currentWeightUnit = "kg";
 
 async function bootstrapApp() {
     ensureBootstrapStyles();
+    await loadRuntimeFirebaseConfig();
     await loadFirebaseSdk();
     initFirebase();
     await syncAuthState();
@@ -793,8 +805,95 @@ function injectScript(src) {
     });
 }
 
+async function loadRuntimeFirebaseConfig() {
+    const envVars = await loadDotEnvVars();
+    const normalized = normalizeFirebaseRuntimeConfig(envVars);
+    FIREBASE_CONFIG = {
+        ...FIREBASE_DEFAULT_CONFIG,
+        ...normalized
+    };
+}
+
+async function loadDotEnvVars() {
+    if (!window.location.protocol.startsWith("http")) {
+        return {};
+    }
+
+    try {
+        const response = await fetch(".env", { cache: "no-store" });
+        if (!response.ok) {
+            return {};
+        }
+
+        const envText = await response.text();
+        return parseDotEnv(envText);
+    } catch {
+        return {};
+    }
+}
+
+function parseDotEnv(envText) {
+    const result = {};
+    const lines = String(envText || "").split(/\r?\n/);
+    for (const lineRaw of lines) {
+        const line = lineRaw.trim();
+        if (!line || line.startsWith("#")) {
+            continue;
+        }
+
+        const separatorIndex = line.indexOf("=");
+        if (separatorIndex <= 0) {
+            continue;
+        }
+
+        const key = line.slice(0, separatorIndex).trim();
+        const value = line.slice(separatorIndex + 1).trim().replace(/^['\"]|['\"]$/g, "");
+        if (!key) {
+            continue;
+        }
+
+        result[key] = value;
+    }
+
+    return result;
+}
+
+function normalizeFirebaseRuntimeConfig(envVars) {
+    const mapping = {
+        FIREBASE_API_KEY: "apiKey",
+        FIREBASE_AUTH_DOMAIN: "authDomain",
+        FIREBASE_PROJECT_ID: "projectId",
+        FIREBASE_STORAGE_BUCKET: "storageBucket",
+        FIREBASE_MESSAGING_SENDER_ID: "messagingSenderId",
+        FIREBASE_APP_ID: "appId",
+        FIREBASE_MEASUREMENT_ID: "measurementId"
+    };
+
+    const normalized = {};
+    for (const [envKey, configKey] of Object.entries(mapping)) {
+        const rawValue = envVars?.[envKey];
+        if (!rawValue) {
+            continue;
+        }
+
+        normalized[configKey] = String(rawValue).trim();
+    }
+
+    return normalized;
+}
+
+function hasRequiredFirebaseConfig(config) {
+    const requiredKeys = ["apiKey", "authDomain", "projectId", "storageBucket", "messagingSenderId", "appId"];
+    return requiredKeys.every((key) => Boolean(String(config?.[key] || "").trim()));
+}
+
 function initFirebase() {
     if (!window.firebase) {
+        firebaseState.enabled = false;
+        return;
+    }
+
+    if (!hasRequiredFirebaseConfig(FIREBASE_CONFIG)) {
         firebaseState.enabled = false;
         return;
     }
@@ -1567,6 +1666,7 @@ async function initAddCatch(user) {
     const imageInput = document.getElementById("catchImages");
     const cameraInput = document.getElementById("catchCamera");
     const imagePreview = document.getElementById("imagePreview");
+    const compressToggle = document.getElementById("compressImagesToggle");
 
     if (!form || !fishRows || !addFishRowBtn || !msg || !dateInput || !imageInput || !cameraInput || !imagePreview) {
         return;
@@ -1683,7 +1783,9 @@ async function initAddCatch(user) {
         }
 
         try {
-            const imageData = await saveImages(selectedImages, user.id, catchId);
+            const imageData = await saveImages(selectedImages, user.id, catchId, {
+                compress: compressToggle instanceof HTMLInputElement ? compressToggle.checked : false
+            });
             const fishCount = Number(data.get("fishCount") || 0);
             const waterTemp = parseOptionalNumber(data.get("waterTemp"));
             const weather = String(data.get("weather") || "").trim();
@@ -1745,7 +1847,7 @@ async function initLogbook(user) {
     const closeModalBtn = document.getElementById("closeLogbookDetails");
     const filterPanel = document.getElementById("filterPanel");
     const toggleFilterPanelBtn = document.getElementById("toggleFilterPanel");
-    const listCard = container?.closest(".card");
+    const listCard = document.getElementById("logbookResultsCard") || container?.closest(".card");
 
     if (!form || !clearBtn || !container || !modal || !modalContent || !closeModalBtn || !filterPanel || !toggleFilterPanelBtn) {
         return;
@@ -2951,17 +3053,22 @@ function pickAndUploadAdditionalImages(catchRecord) {
     });
 }
 
-async function saveImages(files, userId, catchId) {
+async function saveImages(files, userId, catchId, options = {}) {
     if (!files || files.length === 0) {
         return [];
     }
+
+    const shouldCompress = Boolean(options && options.compress);
+    const uploadFiles = shouldCompress
+        ? await compressImageFiles(files)
+        : files;
 
     const user = getCurrentUser();
     const isGuest = Boolean(user?.isGuest);
 
     if (!isGuest && firebaseState.enabled && firebaseState.storage) {
         try {
-            const uploads = files.map(async (file, index) => {
+            const uploads = uploadFiles.map(async (file, index) => {
                 const safeName = String(file.name || `image-${index}`).replaceAll(/[^a-zA-Z0-9._-]/g, "_");
                 const path = `catches/${userId}/${catchId}/${Date.now()}-${index}-${safeName}`;
                 const ref = firebaseState.storage.ref().child(path);
@@ -2976,7 +3083,118 @@ async function saveImages(files, userId, catchId) {
         }
     }
 
-    return filesToBase64(files);
+    return filesToBase64(uploadFiles);
+}
+
+function compressImageFiles(files) {
+    return Promise.all(files.map(async (file) => {
+        try {
+            return await compressImageFile(file);
+        } catch (error) {
+            console.warn("Image compression failed, using original file.", error);
+            return file;
+        }
+    }));
+}
+
+async function compressImageFile(file) {
+    if (!(file instanceof File)) {
+        return file;
+    }
+
+    const type = String(file.type || "").toLowerCase();
+    if (!type.startsWith("image/") || type === "image/gif") {
+        return file;
+    }
+
+    const MIN_SIZE_BYTES = 250 * 1024;
+    if (file.size < MIN_SIZE_BYTES) {
+        return file;
+    }
+
+    const MAX_DIMENSION = 1600;
+    const QUALITY = 0.82;
+    const image = await loadImageForCompression(file);
+    const sourceWidth = Number(image.naturalWidth || image.width || 0);
+    const sourceHeight = Number(image.naturalHeight || image.height || 0);
+    if (!sourceWidth || !sourceHeight) {
+        return file;
+    }
+
+    const scale = Math.min(1, MAX_DIMENSION / Math.max(sourceWidth, sourceHeight));
+    const targetWidth = Math.max(1, Math.round(sourceWidth * scale));
+    const targetHeight = Math.max(1, Math.round(sourceHeight * scale));
+
+    const canvas = document.createElement("canvas");
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+        return file;
+    }
+
+    ctx.drawImage(image, 0, 0, targetWidth, targetHeight);
+
+    let outputType = "image/jpeg";
+    if (type === "image/png") {
+        outputType = "image/png";
+    } else if (type === "image/webp") {
+        outputType = "image/webp";
+    }
+
+    const blob = await canvasToBlob(canvas, outputType, outputType === "image/png" ? undefined : QUALITY);
+    if (!blob) {
+        return file;
+    }
+
+    if (blob.size >= file.size * 0.95) {
+        return file;
+    }
+
+    return new File([blob], normalizeImageFileName(file.name, outputType), {
+        type: outputType,
+        lastModified: Date.now()
+    });
+}
+
+function loadImageForCompression(file) {
+    return new Promise((resolve, reject) => {
+        const objectUrl = URL.createObjectURL(file);
+        const img = new Image();
+
+        img.onload = () => {
+            URL.revokeObjectURL(objectUrl);
+            resolve(img);
+        };
+
+        img.onerror = () => {
+            URL.revokeObjectURL(objectUrl);
+            reject(new Error("Failed to decode image."));
+        };
+
+        img.src = objectUrl;
+    });
+}
+
+function canvasToBlob(canvas, type, quality) {
+    return new Promise((resolve) => {
+        canvas.toBlob((blob) => resolve(blob || null), type, quality);
+    });
+}
+
+function normalizeImageFileName(originalName, mimeType) {
+    const name = String(originalName || "photo");
+    const dotIndex = name.lastIndexOf(".");
+    const base = dotIndex > 0 ? name.slice(0, dotIndex) : name;
+
+    const extByMime = {
+        "image/jpeg": "jpg",
+        "image/png": "png",
+        "image/webp": "webp"
+    };
+
+    const ext = extByMime[mimeType] || "jpg";
+    return `${base}.${ext}`;
 }
 
 function addFishRow(container) {
@@ -3511,6 +3729,8 @@ function applyPageTranslations(page, user) {
             setText("#addFishRow", t("add.addFishRow"));
             setText('label[for="catchImages"]', t("add.uploadPhotos"));
             setText('label[for="catchCamera"]', t("add.uploadCamera"));
+            setText("#compressImagesLabel", t("add.compressImages"));
+            setText("#compressImagesHint", t("add.compressHint"));
             setText('label[for="notes"]', t("add.notes"));
             setText('#catchForm button[type="submit"]', t("add.save"));
             setPlaceholder("#placeName", t("add.placeNamePh"));

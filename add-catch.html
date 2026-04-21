@@ -58,6 +58,13 @@
 
                 <label for="catchCamera">Take photo with phone camera</label>
                 <input type="file" id="catchCamera" name="catchCamera" accept=".png,.jpg,.jpeg,.webp,.gif,image/png,image/jpeg,image/webp,image/gif" capture="environment" multiple>
+                <div class="image-compress-option">
+                    <label for="compressImagesToggle" class="check-label">
+                        <input type="checkbox" id="compressImagesToggle" name="compressImagesToggle" checked>
+                        <span id="compressImagesLabel">Compress photos before upload (recommended)</span>
+                    </label>
+                    <p id="compressImagesHint" class="field-hint">Reduces image size and speeds up saving.</p>
+                </div>
                 <div id="imagePreview" class="image-preview"></div>
 
                 <label for="notes">Notes</label>
