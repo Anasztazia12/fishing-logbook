@@ -140,6 +140,8 @@ Notes:
 
 - `.env` is ignored by git (`.gitignore`), so secrets stay local.
 - Some static servers block dotfiles. If cloud registration shows unavailable, do a hard refresh and verify `.env` is served.
+- GitHub Pages uses [assets/js/config.public.js](assets/js/config.public.js) for runtime config.
+- The Supabase publishable/anon key is safe for frontend use. Never expose the `service_role` key.
 
 ## Run Locally
 
