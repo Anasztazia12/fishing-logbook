@@ -1843,9 +1843,7 @@ async function initAddCatch(user) {
         }
 
         try {
-            const imageData = await saveImages(selectedImages, user.id, catchId, {
-                compress: compressToggle instanceof HTMLInputElement ? compressToggle.checked : false
-            });
+            const imageData = await saveImages(selectedImages, user.id, catchId);
             const fishCount = Number(data.get("fishCount") || 0);
             const waterTemp = parseOptionalNumber(data.get("waterTemp"));
             const weather = String(data.get("weather") || "").trim();
@@ -3177,10 +3175,8 @@ async function saveImages(files, userId, catchId, options = {}) {
         return [];
     }
 
-    const shouldCompress = Boolean(options && options.compress);
-    const uploadFiles = shouldCompress
-        ? await compressImageFiles(files)
-        : files;
+    // ALWAYS compress images - no option to disable
+    const uploadFiles = await compressImageFiles(files);
 
     if (supabaseClient && SUPABASE_CONFIG.storageBucket && userId) {
         try {
@@ -3244,13 +3240,9 @@ async function compressImageFile(file) {
         return file;
     }
 
-    const MIN_SIZE_BYTES = 250 * 1024;
-    if (file.size < MIN_SIZE_BYTES) {
-        return file;
-    }
-
-    const MAX_DIMENSION = 1600;
-    const QUALITY = 0.82;
+    // Compress all JPEG/PNG/WebP images for consistent storage
+    const MAX_DIMENSION = 1400;
+    const QUALITY = 0.75;  // Aggressive compression for smaller file size
     const image = await loadImageForCompression(file);
     const sourceWidth = Number(image.naturalWidth || image.width || 0);
     const sourceHeight = Number(image.naturalHeight || image.height || 0);
