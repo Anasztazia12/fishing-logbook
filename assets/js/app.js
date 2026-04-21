@@ -1895,6 +1895,12 @@ async function initLogbook(user) {
         return;
     }
 
+    // Prevent duplicate initialization (remove old listeners)
+    if (window.__logbookInitialized) {
+        return;
+    }
+    window.__logbookInitialized = true;
+
     const quick = new URLSearchParams(window.location.search).get("quick");
     const fromSave = new URLSearchParams(window.location.search).get("fromSave") === "1";
     const savedCatchId = new URLSearchParams(window.location.search).get("savedCatchId") || "";
@@ -1926,6 +1932,20 @@ async function initLogbook(user) {
 
     let catches = await getUserCatches(user.id);
     let focusedSavedCatch = false;
+
+    // **KRITIKUS FIX**: Ha idejöttünk save után, biztosan kell lennie adatnak
+    // Ha üres, próbáljuk újra betölteni (max 3 próba)
+    if (fromSave && catches.length === 0) {
+        let retries = 0;
+        while (catches.length === 0 && retries < 3) {
+            await new Promise(resolve => setTimeout(resolve, 200)); // várakozás 200ms
+            catches = await getUserCatches(user.id);
+            retries += 1;
+        }
+    }
+
+    // **DEBUG**: Log a betöltött catches számát
+    console.log(`[LOGBOOK] Loaded ${catches.length} catches for user ${user.id}`, catches);
 
     const openDetailsModal = (catchId) => {
         const selected = catches.find((item) => item.id === catchId);
@@ -1964,38 +1984,48 @@ async function initLogbook(user) {
     };
 
     const render = () => {
-        const formData = new FormData(form);
-        const hasActiveFilters = Array.from(formData.values()).some((value) => String(value || "").trim() !== "");
-        const filtered = filterCatches(catches, formData);
-        const shouldShowSearchFeedback = hasActiveFilters || didSearch;
-        const shouldShowResults = filtered.length > 0 || shouldShowSearchFeedback;
+        try {
+            const formData = new FormData(form);
+            const hasActiveFilters = Array.from(formData.values()).some((value) => String(value || "").trim() !== "");
+            const filtered = filterCatches(catches, formData);
+            const shouldShowSearchFeedback = hasActiveFilters || didSearch;
+            const shouldShowResults = filtered.length > 0 || shouldShowSearchFeedback;
 
-        if (count) {
-            count.hidden = !shouldShowSearchFeedback;
-            if (shouldShowSearchFeedback) {
-                count.textContent = t("logbook.resultCount", { count: filtered.length });
-                count.classList.toggle("badge-empty", filtered.length === 0);
-            } else {
-                count.textContent = "";
-                count.classList.remove("badge-empty");
+            if (count) {
+                count.hidden = !shouldShowSearchFeedback;
+                if (shouldShowSearchFeedback) {
+                    count.textContent = t("logbook.resultCount", { count: filtered.length });
+                    count.classList.toggle("badge-empty", filtered.length === 0);
+                } else {
+                    count.textContent = "";
+                    count.classList.remove("badge-empty");
+                }
             }
-        }
 
-        if (filtered.length === 0) {
-            container.innerHTML = shouldShowSearchFeedback
-                ? `<article class="list-item"><p>${t("logbook.noMatch")}</p></article>`
-                : "";
+            if (filtered.length === 0) {
+                container.innerHTML = shouldShowSearchFeedback
+                    ? `<article class="list-item"><p>${t("logbook.noMatch")}</p></article>`
+                    : "";
+                if (listCard) {
+                    listCard.hidden = !shouldShowResults;
+                }
+                return;
+            }
+
             if (listCard) {
-                listCard.hidden = !shouldShowResults;
+                listCard.hidden = false;
             }
-            return;
+            container.innerHTML = filtered.map((item) => renderCatchCard(item, false)).join("");
+            focusSavedCatchCard();
+        } catch (error) {
+            console.error("Render failed:", error);
+            if (container) {
+                container.innerHTML = `<article class="list-item"><p>Error: ${escapeHtml(String(error.message || "Unknown error"))}</p></article>`;
+            }
+            if (listCard) {
+                listCard.hidden = false;
+            }
         }
-
-        if (listCard) {
-            listCard.hidden = false;
-        }
-        container.innerHTML = filtered.map((item) => renderCatchCard(item, false)).join("");
-        focusSavedCatchCard();
     };
 
     form.addEventListener("submit", (event) => {
@@ -2096,6 +2126,7 @@ async function initLogbook(user) {
         didSearch = true;
     }
 
+    // Initial render to show catches if they exist
     render();
 }
 
