@@ -898,17 +898,17 @@ function hasSupabaseRuntimeConfig() {
 function catchToSupabase(record) {
     return {
         id: record.id,
-        user_id: record.userId || null,
-        date: record.date || null,
-        place_name: record.placeName || null,
-        place_link: record.placeLink || null,
-        maps_link: record.mapsLink || null,
+        user_id: record.userId || "",
+        date: record.date || new Date().toISOString().slice(0, 10),
+        place_name: record.placeName || "",
+        place_link: record.placeLink || "",
+        maps_link: record.mapsLink || "",
         fish_count: Number(record.fishCount) || 0,
         fish_data: record.fishItems || [],
-        baits: record.baits || null,
-        notes: record.notes || null,
-        water_temp: (record.waterTemp !== undefined && record.waterTemp !== null) ? Number(record.waterTemp) : null,
-        weather: record.weather || null,
+        baits: record.baits || "",
+        notes: record.notes || "",
+        water_temp: (record.waterTemp !== undefined && record.waterTemp !== null) ? Number(record.waterTemp) : 0,
+        weather: record.weather || "",
         image_urls: record.imageData || []
     };
 }
@@ -961,7 +961,15 @@ function normalizeImageEntry(entry) {
 
 function getImageEntrySrc(entry) {
     const normalized = normalizeImageEntry(entry);
-    return normalized?.src || normalized?.path || "";
+    if (!normalized) {
+        return "";
+    }
+
+    if (normalized.src) {
+        return normalized.src;
+    }
+
+    return "";
 }
 
 async function getSignedStorageUrl(path) {
@@ -1915,7 +1923,7 @@ async function initLogbook(user) {
     // Show filter description only if there's data to filter
     const updateFilterDescriptionVisibility = () => {
         if (filterDescription) {
-            filterDescription.hidden = catches.length === 0;
+            filterDescription.hidden = catches.length === 0 || !filterPanelOpened;
         }
     };
 
@@ -1928,6 +1936,7 @@ async function initLogbook(user) {
     const quick = new URLSearchParams(window.location.search).get("quick");
     const fromSave = new URLSearchParams(window.location.search).get("fromSave") === "1";
     const savedCatchId = new URLSearchParams(window.location.search).get("savedCatchId") || "";
+    let filterPanelOpened = quick === "caught";
     if (quick === "caught") {
         const fishMinInput = document.getElementById("filterFishMin");
         if (fishMinInput) {
@@ -1943,6 +1952,8 @@ async function initLogbook(user) {
     toggleFilterPanelBtn.addEventListener("click", () => {
         if (filterPanel.hidden) {
             filterPanel.hidden = false;
+            filterPanelOpened = true;
+            updateFilterDescriptionVisibility();
             return;
         }
 
@@ -1965,6 +1976,13 @@ async function initLogbook(user) {
             await new Promise(resolve => setTimeout(resolve, 200)); // várakozás 200ms
             catches = await getUserCatches(user.id);
             retries += 1;
+        }
+    }
+
+    if (fromSave && savedCatchId && !catches.some((item) => item.id === savedCatchId)) {
+        const storedCatch = getStoredCatchById(savedCatchId);
+        if (storedCatch) {
+            catches = quickNormalizeCatchCollection([storedCatch, ...catches.filter((item) => item.id !== savedCatchId)]);
         }
     }
 
@@ -1993,6 +2011,10 @@ async function initLogbook(user) {
     };
 
     const focusSavedCatchCard = () => {
+        if (fromSave && listCard instanceof HTMLElement) {
+            listCard.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+
         if (!savedCatchId || focusedSavedCatch) {
             return;
         }
@@ -2147,7 +2169,9 @@ async function initLogbook(user) {
     });
 
     if (catches.length > 0) {
-        didSearch = true;
+        if (fromSave) {
+            didSearch = true;
+        }
     }
 
     // Update filter description visibility based on data availability
@@ -2170,6 +2194,15 @@ async function initLogbook(user) {
             // App continues with non-enriched images (base64 or paths)
         }
     })();
+}
+
+function getStoredCatchById(catchId) {
+    if (!catchId) {
+        return null;
+    }
+
+    const catches = readStorage(STORAGE.catches, []);
+    return catches.find((item) => String(item?.id || "") === String(catchId)) || null;
 }
 
 async function initCatchDetails(user) {
@@ -2881,6 +2914,8 @@ async function getUserCatches(userId) {
                 .select("*")
                 .eq("user_id", userId)
                 .order("date", { ascending: false });
+
+            console.log(`[SUPABASE] SELECT catches for user_id=${userId}`, { data, error });
 
             if (!error && data) {
                 const cloud = data.map(catchFromSupabase);
