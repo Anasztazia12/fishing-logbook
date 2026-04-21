@@ -1016,6 +1016,24 @@ async function enrichCatchCollection(catches) {
     return Promise.all((Array.isArray(catches) ? catches : []).map((item) => enrichCatchImages(item)));
 }
 
+// Fast normalization without async API calls - for initial page load
+function quickNormalizeCatchImages(catchRecord) {
+    const imageData = Array.isArray(catchRecord?.imageData) ? catchRecord.imageData : [];
+    const normalized = imageData
+        .map((entry) => normalizeImageEntry(entry))
+        .filter(Boolean);
+
+    return {
+        ...catchRecord,
+        imageData: normalized
+    };
+}
+
+// Fast batch normalization for initial load - no API calls
+function quickNormalizeCatchCollection(catches) {
+    return (Array.isArray(catches) ? catches : []).map((item) => quickNormalizeCatchImages(item));
+}
+
 async function syncAuthState() {
     if (!supabaseClient) {
         return;
@@ -1889,11 +1907,19 @@ async function initLogbook(user) {
     const closeModalBtn = document.getElementById("closeLogbookDetails");
     const filterPanel = document.getElementById("filterPanel");
     const toggleFilterPanelBtn = document.getElementById("toggleFilterPanel");
+    const filterDescription = document.getElementById("filterDescription");
     const listCard = document.getElementById("logbookResultsCard") || container?.closest(".card");
 
     if (!form || !clearBtn || !container || !modal || !modalContent || !closeModalBtn || !filterPanel || !toggleFilterPanelBtn) {
         return;
     }
+
+    // Show filter description only if there's data to filter
+    const updateFilterDescriptionVisibility = () => {
+        if (filterDescription) {
+            filterDescription.hidden = catches.length === 0;
+        }
+    };
 
     // Prevent duplicate initialization (remove old listeners)
     if (window.__logbookInitialized) {
@@ -2126,8 +2152,26 @@ async function initLogbook(user) {
         didSearch = true;
     }
 
+    // Update filter description visibility based on data availability
+    updateFilterDescriptionVisibility();
+
     // Initial render to show catches if they exist
     render();
+
+    // Async image loading in the background after initial render
+    // This enriches the image URLs with signed storage URLs without blocking initial display
+    (async () => {
+        try {
+            const enriched = await enrichCatchCollection(catches);
+            catches = enriched;
+            // Re-render to update images with signed URLs
+            updateFilterDescriptionVisibility();
+            render();
+        } catch (error) {
+            console.warn("Async image enrichment failed:", error);
+            // App continues with non-enriched images (base64 or paths)
+        }
+    })();
 }
 
 async function initCatchDetails(user) {
@@ -2825,7 +2869,7 @@ async function getUserCatches(userId) {
     const localVisible = localOwn.length > 0 ? localOwn : localAll;
 
     if (isGuest) {
-        return enrichCatchCollection(localVisible.sort((a, b) => {
+        return quickNormalizeCatchCollection(localVisible.sort((a, b) => {
             const aDate = new Date(a.date || a.createdAt).getTime();
             const bDate = new Date(b.date || b.createdAt).getTime();
             return bDate - aDate;
@@ -2849,7 +2893,7 @@ async function getUserCatches(userId) {
                     }
                 });
 
-                return enrichCatchCollection(cloud.sort((a, b) => {
+                return quickNormalizeCatchCollection(cloud.sort((a, b) => {
                     const aDate = new Date(a.date || a.createdAt).getTime();
                     const bDate = new Date(b.date || b.createdAt).getTime();
                     return bDate - aDate;
@@ -2860,7 +2904,7 @@ async function getUserCatches(userId) {
         }
     }
 
-    return enrichCatchCollection(localVisible.sort((a, b) => {
+    return quickNormalizeCatchCollection(localVisible.sort((a, b) => {
         const aDate = new Date(a.date || a.createdAt).getTime();
         const bDate = new Date(b.date || b.createdAt).getTime();
         return bDate - aDate;
