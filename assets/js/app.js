@@ -13,8 +13,14 @@ const AVAILABLE_BACKGROUNDS = [
     "fishing4.png",
     "fishing5.png"
 ];
-
-const bgModalState = {
+const ALLOWED_IMAGE_TYPES = [
+    "image/png",
+    "image/jpeg",
+    "image/jpg",
+    "image/webp",
+    "image/gif"
+];
+    const bgModalState = {
     originalBackground: "background.png",
     previewBackground: "background.png"
 };
@@ -220,11 +226,6 @@ const PUBLIC_PAGES = new Set(["index", "login", "register"]);
 const SUPPORTED_LANGUAGES = new Set(["en", "hu"]);
 const PASSWORD_POLICY = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*()_\-+=.?]{8,20}$/;
 const ALLOWED_IMAGE_MIME_TYPES = new Set([
-    "image/png",
-    "image/jpeg",
-    "image/jpg",
-    "image/webp",
-    "image/gif"
 ]);
 const ALLOWED_IMAGE_EXTENSIONS = [".png", ".jpg", ".jpeg", ".webp", ".gif"];
 
