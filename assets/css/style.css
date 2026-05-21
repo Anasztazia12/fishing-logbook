@@ -390,10 +390,10 @@ body {
 }
 
 .hero-text {
-	max-width: 64ch;
+	max-width: 120ch;
 	color: #1f261d;
 	font-weight: 600;
-	line-height: 1.55;
+	line-height: 1.8;
 	background: rgba(245, 243, 234, 0.74);
 	border: 1px solid rgba(64, 76, 48, 0.16);
 	border-radius: 14px;
