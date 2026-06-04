@@ -622,12 +622,14 @@ const I18N = {
         "login.resetCode": "Visszaállító kód",
         "login.title": "Belépés",
         "login.subtitle": "Lépj be a horgász irányítópultodra.",
-        "login.email": "Email",
+        "login.email": "Email vagy felhasználónév",
         "login.password": "Jelszó",
+        "login.showPassword": "Jelszó mutatása",
+        "login.hidePassword": "Jelszó elrejtése",
         "login.passwordConfirm": "Jelszó megerősítése",
         "login.button": "Belépés",
         "login.emailInvalid": "Az email cím formátuma hibás.",
-        "login.emailNotFound": "Ehhez az email címhez nem található fiók.",
+        "login.emailNotFound": "Ezzel az email címmel vagy felhasználónévvel nem található fiók.",
         "login.newPassword": "Új jelszó",
         "login.newPasswordPh": "Add meg az új jelszót",
         "login.applyReset": "Jelszó visszaállítása",
@@ -880,17 +882,15 @@ async function loadFirebaseSdk() {
     const V = "10.12.4";
     const B = `https://www.gstatic.com/firebasejs/${V}`;
     try {
-        const [appMod, authMod, fsMod, stMod] = await Promise.all([
+        const [appMod, authMod, fsMod] = await Promise.all([
             import(`${B}/firebase-app.js`),
             import(`${B}/firebase-auth.js`),
-            import(`${B}/firebase-firestore.js`),
-            import(`${B}/firebase-storage.js`)
+            import(`${B}/firebase-firestore.js`)
         ]);
-        Object.assign(fbFns, appMod, authMod, fsMod, stMod);
+        Object.assign(fbFns, appMod, authMod, fsMod);
         fbApp = fbFns.initializeApp(FIREBASE_CONFIG);
         fbAuth = fbFns.getAuth(fbApp);
         fbDb = fbFns.getFirestore(fbApp);
-        fbStorage = fbFns.getStorage(fbApp);
     } catch {
         // SDK load failure keeps app functional via localStorage fallback.
     }
@@ -2957,7 +2957,7 @@ async function getUserCatches(userId) {
                 fbFns.where("userId", "==", userId),
                 fbFns.orderBy("date", "desc")
             );
-            const snapshot = await fbFns.getDocs(q);
+            const snapshot = await withTimeout(fbFns.getDocs(q), 5000, "Firestore query timed out");
             if (!snapshot.empty) {
                 const cloud = snapshot.docs.map(catchFromFirestore);
                 const cloudIds = new Set(cloud.map((item) => item.id));
@@ -3052,9 +3052,9 @@ async function saveCatch(catchRecord) {
 
     if (!isGuest && fbDb && fbFns.setDoc && fbFns.doc) {
         try {
-            await fbFns.setDoc(
-                fbFns.doc(fbDb, "catches", catchRecord.id),
-                catchToFirestore(catchRecord)
+            await withTimeout(
+                fbFns.setDoc(fbFns.doc(fbDb, "catches", catchRecord.id), catchToFirestore(catchRecord)),
+                5000, "Firestore save timed out"
             );
         } catch (error) {
             console.warn("Firebase catch save failed, using local fallback.", error);
@@ -3081,9 +3081,9 @@ async function updateCatchRecord(catchRecord) {
 
     if (!isGuest && fbDb && fbFns.setDoc && fbFns.doc) {
         try {
-            await fbFns.setDoc(
-                fbFns.doc(fbDb, "catches", normalizedRecord.id),
-                catchToFirestore(normalizedRecord)
+            await withTimeout(
+                fbFns.setDoc(fbFns.doc(fbDb, "catches", normalizedRecord.id), catchToFirestore(normalizedRecord)),
+                5000, "Firestore update timed out"
             );
         } catch (error) {
             console.warn("Firebase catch update failed, using local fallback.", error);
@@ -3106,7 +3106,10 @@ async function deleteCatchRecord(catchId, userId) {
 
     if (!isGuest && fbDb && fbFns.deleteDoc && fbFns.doc) {
         try {
-            await fbFns.deleteDoc(fbFns.doc(fbDb, "catches", catchId));
+            await withTimeout(
+                fbFns.deleteDoc(fbFns.doc(fbDb, "catches", catchId)),
+                5000, "Firestore delete timed out"
+            );
         } catch (error) {
             console.warn("Firebase catch delete failed, using local fallback.", error);
         }
