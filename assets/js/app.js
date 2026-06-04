@@ -899,6 +899,12 @@ function hasFirebaseConfig() {
 }
 
 function catchToFirestore(record) {
+    // Strip base64 images from Firestore — only keep real storage paths/URLs (Firestore has 1MB doc limit)
+    const firestoreImages = (record.imageData || []).filter((entry) => {
+        const src = String(entry?.src || "");
+        const path = String(entry?.path || "");
+        return (src.startsWith("https://") || src.startsWith("http://")) || path.length > 0;
+    });
     return {
         userId: record.userId || "",
         date: record.date || new Date().toISOString().slice(0, 10),
@@ -911,7 +917,7 @@ function catchToFirestore(record) {
         notes: record.notes || "",
         waterTemp: (record.waterTemp !== undefined && record.waterTemp !== null) ? Number(record.waterTemp) : 0,
         weather: record.weather || "",
-        imageData: record.imageData || [],
+        imageData: firestoreImages,
         createdAt: record.createdAt || new Date().toISOString()
     };
 }
@@ -1748,7 +1754,6 @@ async function initAddCatch(user) {
     const imageInput = document.getElementById("catchImages");
     const cameraInput = document.getElementById("catchCamera");
     const imagePreview = document.getElementById("imagePreview");
-    const compressToggle = document.getElementById("compressImagesToggle");
 
     if (!form || !fishRows || !addFishRowBtn || !msg || !dateInput || !imageInput || !cameraInput || !imagePreview) {
         return;
@@ -2104,7 +2109,7 @@ async function initLogbook(user) {
 
     clearBtn.addEventListener("click", () => {
         form.reset();
-        didSearch = false;
+        didSearch = true;
         render();
     });
 
