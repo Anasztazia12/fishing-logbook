@@ -4,6 +4,9 @@
 env.local
 /env.local
 
-# Local secret config files
-supabase.local.*
-**/supabase.local.*
+# Firebase
+functions/node_modules/
+.firebase/
+firebase-debug.log
+firebase-debug.*.log
+.firebaserc

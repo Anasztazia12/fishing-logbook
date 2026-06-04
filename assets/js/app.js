@@ -214,13 +214,20 @@ const STORAGE = {
     language: "flb_language"
 };
 
-const SUPABASE_DEFAULT_CONFIG = {
-    url: "",
-    anonKey: "",
-    storageBucket: "fish, image"
+const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyDjPN1Mcmh2lIX4wUAroLYDg9gMgJzOZu8",
+    authDomain: "fishing-logbook12.firebaseapp.com",
+    projectId: "fishing-logbook12",
+    storageBucket: "fishing-logbook12.firebasestorage.app",
+    messagingSenderId: "884097312796",
+    appId: "1:884097312796:web:a37b2c4c05047cade297d9"
 };
-let SUPABASE_CONFIG = { ...SUPABASE_DEFAULT_CONFIG };
-let supabaseClient = null;
+let fbApp = null;
+let fbAuth = null;
+let fbDb = null;
+let fbStorage = null;
+let fbFunctions = null;
+let fbFns = {};
 
 const PUBLIC_PAGES = new Set(["index", "login", "register"]);
 const SUPPORTED_LANGUAGES = new Set(["en", "hu"]);
@@ -301,7 +308,9 @@ const I18N = {
         "register.passwordInvalid": "Password must be 8-20 chars, include at least 1 letter and 1 number, and use only allowed symbols.",
         "register.firebaseFallback": "Cloud registration is unavailable right now. Your account was created locally.",
         "register.cloudUnavailable": "Cloud registration is currently unavailable. Please try again later.",
-        "register.supabaseConfigMissing": "Supabase config is missing. Add SUPABASE_URL and SUPABASE_ANON_KEY to .env, then hard refresh.",
+        "register.captchaRequired": "Please complete the reCAPTCHA verification.",
+        "register.captchaFailed": "reCAPTCHA verification failed. Please try again.",
+        "register.supabaseConfigMissing": "Cloud registration is currently unavailable. Please try again later.",
         "register.verificationSent": "Welcome, {name}! A confirmation email has been sent to {email}.",
         "register.success": "Registration successful. Redirecting...",
         "register.failed": "Registration failed.",
@@ -538,7 +547,9 @@ const I18N = {
         "register.passwordInvalid": "A jelszó legyen 8-20 karakter, legyen benne legalább 1 betű és 1 szám, és csak engedélyezett karaktereket használj.",
         "register.firebaseFallback": "A felhős regisztráció most nem elérhető. A fiók helyben létrejött.",
         "register.cloudUnavailable": "A felhős regisztráció most nem elérhető. Próbáld újra később.",
-        "register.supabaseConfigMissing": "Hianyzik a Supabase config. Add meg a SUPABASE_URL es SUPABASE_ANON_KEY ertekeket a .env-ben, majd csinalj hard refresh-t.",
+        "register.captchaRequired": "Kérjük, töltsd ki a reCAPTCHA ellenőrzést.",
+        "register.captchaFailed": "A reCAPTCHA ellenőrzés sikertelen. Kérjük, próbáld újra.",
+        "register.supabaseConfigMissing": "A felhős regisztráció most nem elérhető. Próbáld újra később.",
         "register.verificationSent": "Üdv, {name}! Visszaigazoló emailt küldtünk ide: {email}.",
         "register.success": "Sikeres regisztráció. Átirányítás...",
         "register.failed": "A regisztráció sikertelen.",
@@ -713,9 +724,7 @@ let currentWeightUnit = "kg";
 
 async function bootstrapApp() {
     ensureBootstrapStyles();
-    await loadRuntimeSupabaseConfig();
-    await loadSupabaseSdk();
-    initSupabase();
+    await loadFirebaseSdk();
     await syncAuthState();
 
     const page = document.body.dataset.page;
@@ -756,181 +765,73 @@ async function bootstrapApp() {
     }
 }
 
-async function loadSupabaseSdk() {
-    if (window.supabase) {
+async function loadFirebaseSdk() {
+    if (fbApp) {
         return;
     }
 
+    const V = "10.12.4";
+    const B = `https://www.gstatic.com/firebasejs/${V}`;
     try {
-        await injectScript("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js");
+        const [appMod, authMod, fsMod, stMod, fnsMod] = await Promise.all([
+            import(`${B}/firebase-app.js`),
+            import(`${B}/firebase-auth.js`),
+            import(`${B}/firebase-firestore.js`),
+            import(`${B}/firebase-storage.js`),
+            import(`${B}/firebase-functions.js`)
+        ]);
+        Object.assign(fbFns, appMod, authMod, fsMod, stMod, fnsMod);
+        fbApp = fbFns.initializeApp(FIREBASE_CONFIG);
+        fbAuth = fbFns.getAuth(fbApp);
+        fbDb = fbFns.getFirestore(fbApp);
+        fbStorage = fbFns.getStorage(fbApp);
+        fbFunctions = fbFns.getFunctions(fbApp);
     } catch {
         // SDK load failure keeps app functional via localStorage fallback.
     }
 }
 
-function injectScript(src) {
-    return new Promise((resolve, reject) => {
-        const existing = document.querySelector(`script[data-sdk="${src}"]`);
-        if (existing) {
-            resolve();
-            return;
-        }
-
-        const script = document.createElement("script");
-        script.src = src;
-        script.async = true;
-        script.dataset.sdk = src;
-        script.onload = () => resolve();
-        script.onerror = () => reject(new Error(`Failed to load script: ${src}`));
-        document.head.appendChild(script);
-    });
+function hasFirebaseConfig() {
+    return Boolean(fbApp && fbAuth && fbDb);
 }
 
-async function loadRuntimeSupabaseConfig() {
-    const envVars = await loadDotEnvVars();
-    const windowVars = getWindowRuntimeVars();
-    const localVars = getLocalRuntimeVars();
-    SUPABASE_CONFIG = {
-        ...SUPABASE_DEFAULT_CONFIG,
-        url: String(envVars.SUPABASE_URL || windowVars.SUPABASE_URL || localVars.SUPABASE_URL || "").trim(),
-        anonKey: String(envVars.SUPABASE_ANON_KEY || windowVars.SUPABASE_ANON_KEY || localVars.SUPABASE_ANON_KEY || "").trim(),
-        storageBucket: String(envVars.SUPABASE_STORAGE_BUCKET || windowVars.SUPABASE_STORAGE_BUCKET || localVars.SUPABASE_STORAGE_BUCKET || SUPABASE_DEFAULT_CONFIG.storageBucket).trim()
-    };
-}
-
-async function loadDotEnvVars() {
-    if (!window.location.protocol.startsWith("http")) {
-        return {};
-    }
-
-    try {
-        const candidates = [".env", "/.env", "env.local", "/env.local"];
-        for (const path of candidates) {
-            const response = await fetch(path, { cache: "no-store" });
-            if (!response.ok) {
-                continue;
-            }
-
-            const envText = await response.text();
-            const parsed = parseDotEnv(envText);
-            if (parsed.SUPABASE_URL || parsed.SUPABASE_ANON_KEY) {
-                return parsed;
-            }
-        }
-
-        return {};
-    } catch {
-        return {};
-    }
-}
-
-function getWindowRuntimeVars() {
-    try {
-        return {
-            SUPABASE_URL: String(window.__FLB_SUPABASE_URL__ || ""),
-            SUPABASE_ANON_KEY: String(window.__FLB_SUPABASE_ANON_KEY__ || ""),
-            SUPABASE_STORAGE_BUCKET: String(window.__FLB_SUPABASE_STORAGE_BUCKET__ || "")
-        };
-    } catch {
-        return {};
-    }
-}
-
-function getLocalRuntimeVars() {
-    try {
-        return {
-            SUPABASE_URL: String(localStorage.getItem("flb_supabase_url") || ""),
-            SUPABASE_ANON_KEY: String(localStorage.getItem("flb_supabase_anon_key") || ""),
-            SUPABASE_STORAGE_BUCKET: String(localStorage.getItem("flb_supabase_storage_bucket") || "")
-        };
-    } catch {
-        return {};
-    }
-}
-
-function parseDotEnv(envText) {
-    const result = {};
-    const lines = String(envText || "").split(/\r?\n/);
-    for (const lineRaw of lines) {
-        const line = lineRaw.trim();
-        if (!line || line.startsWith("#")) {
-            continue;
-        }
-
-        const separatorIndex = line.indexOf("=");
-        if (separatorIndex <= 0) {
-            continue;
-        }
-
-        const key = line.slice(0, separatorIndex).trim();
-        const value = line.slice(separatorIndex + 1).trim().replace(/^['\"]|['\"]$/g, "");
-        if (!key) {
-            continue;
-        }
-
-        result[key] = value;
-    }
-
-    return result;
-}
-
-function initSupabase() {
-    if (!window.supabase) {
-        supabaseClient = null;
-        return;
-    }
-
-    if (!SUPABASE_CONFIG.url || !SUPABASE_CONFIG.anonKey) {
-        supabaseClient = null;
-        return;
-    }
-
-    try {
-        supabaseClient = window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
-    } catch {
-        supabaseClient = null;
-    }
-}
-
-function hasSupabaseRuntimeConfig() {
-    return Boolean(SUPABASE_CONFIG.url && SUPABASE_CONFIG.anonKey);
-}
-
-function catchToSupabase(record) {
+function catchToFirestore(record) {
     return {
-        id: record.id,
-        user_id: record.userId || "",
+        userId: record.userId || "",
         date: record.date || new Date().toISOString().slice(0, 10),
-        place_name: record.placeName || "",
-        place_link: record.placeLink || "",
-        maps_link: record.mapsLink || "",
-        fish_count: Number(record.fishCount) || 0,
-        fish_data: record.fishItems || [],
+        placeName: record.placeName || "",
+        placeLink: record.placeLink || "",
+        mapsLink: record.mapsLink || "",
+        fishCount: Number(record.fishCount) || 0,
+        fishItems: record.fishItems || [],
         baits: record.baits || "",
         notes: record.notes || "",
-        water_temp: (record.waterTemp !== undefined && record.waterTemp !== null) ? Number(record.waterTemp) : 0,
+        waterTemp: (record.waterTemp !== undefined && record.waterTemp !== null) ? Number(record.waterTemp) : 0,
         weather: record.weather || "",
-        image_urls: record.imageData || []
+        imageData: record.imageData || [],
+        createdAt: record.createdAt || new Date().toISOString()
     };
 }
 
-function catchFromSupabase(row) {
+function catchFromFirestore(docSnapshot) {
+    const data = docSnapshot.data ? docSnapshot.data() : docSnapshot;
+    const id = docSnapshot.id || data.id || "";
     return {
-        id: row.id,
-        userId: row.user_id || "",
+        id,
+        userId: data.userId || "",
         userEmail: "",
-        date: row.date || "",
-        placeName: row.place_name || "",
-        placeLink: row.place_link || "",
-        mapsLink: row.maps_link || "",
-        fishCount: Number(row.fish_count) || 0,
-        fishItems: Array.isArray(row.fish_data) ? row.fish_data : [],
-        baits: row.baits || "",
-        notes: row.notes || "",
-        waterTemp: (row.water_temp !== undefined && row.water_temp !== null) ? Number(row.water_temp) : null,
-        weather: row.weather || "",
-        imageData: Array.isArray(row.image_urls) ? row.image_urls.map(normalizeImageEntry).filter(Boolean) : [],
-        createdAt: new Date().toISOString()
+        date: data.date || "",
+        placeName: data.placeName || "",
+        placeLink: data.placeLink || "",
+        mapsLink: data.mapsLink || "",
+        fishCount: Number(data.fishCount) || 0,
+        fishItems: Array.isArray(data.fishItems) ? data.fishItems : [],
+        baits: data.baits || "",
+        notes: data.notes || "",
+        waterTemp: (data.waterTemp !== undefined && data.waterTemp !== null) ? Number(data.waterTemp) : null,
+        weather: data.weather || "",
+        imageData: Array.isArray(data.imageData) ? data.imageData.map(normalizeImageEntry).filter(Boolean) : [],
+        createdAt: data.createdAt || new Date().toISOString()
     };
 }
 
@@ -973,21 +874,13 @@ function getImageEntrySrc(entry) {
     return "";
 }
 
-async function getSignedStorageUrl(path) {
-    if (!supabaseClient || !SUPABASE_CONFIG.storageBucket || !path) {
+async function getFirebaseDownloadUrl(path) {
+    if (!fbStorage || !path || !fbFns.ref || !fbFns.getDownloadURL) {
         return "";
     }
 
     try {
-        const { data, error } = await supabaseClient.storage
-            .from(SUPABASE_CONFIG.storageBucket)
-            .createSignedUrl(path, 60 * 60 * 24);
-
-        if (error) {
-            return "";
-        }
-
-        return String(data?.signedUrl || "");
+        return await fbFns.getDownloadURL(fbFns.ref(fbStorage, path));
     } catch {
         return "";
     }
@@ -1006,9 +899,9 @@ async function enrichCatchImages(catchRecord) {
         }
 
         if (normalized.path) {
-            const signedUrl = await getSignedStorageUrl(normalized.path);
-            if (signedUrl) {
-                return { path: normalized.path, src: signedUrl };
+            const downloadUrl = await getFirebaseDownloadUrl(normalized.path);
+            if (downloadUrl) {
+                return { path: normalized.path, src: downloadUrl };
             }
         }
 
@@ -1044,32 +937,37 @@ function quickNormalizeCatchCollection(catches) {
 }
 
 async function syncAuthState() {
-    if (!supabaseClient) {
+    if (!fbAuth || !fbFns.onAuthStateChanged) {
         return;
     }
 
     try {
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        if (!session?.user) {
+        const firebaseUser = await new Promise((resolve) => {
+            const unsubscribe = fbFns.onAuthStateChanged(fbAuth, (u) => {
+                unsubscribe();
+                resolve(u);
+            });
+        });
+
+        if (!firebaseUser) {
             return;
         }
 
-        const authUser = session.user;
         const localUser = getCurrentUser();
         if (localUser?.isGuest) {
             return;
         }
 
         const localEmail = String(localUser?.email || "").toLowerCase();
-        const authEmail = String(authUser.email || "").toLowerCase();
+        const authEmail = String(firebaseUser.email || "").toLowerCase();
         if (localUser && localEmail && authEmail && localEmail !== authEmail) {
             return;
         }
 
         localStorage.setItem(STORAGE.currentUser, JSON.stringify({
-            id: authUser.id,
-            username: authUser.user_metadata?.username || authUser.email || "User",
-            email: authUser.email || ""
+            id: firebaseUser.uid,
+            username: firebaseUser.displayName || firebaseUser.email || "User",
+            email: firebaseUser.email || ""
         }));
     } catch {
         // Keep local session if sync fails.
@@ -1098,20 +996,26 @@ async function deleteCurrentAccount() {
     }
 
     try {
-        if (supabaseClient) {
+        if (fbDb && fbFns.query && user.id) {
             try {
-                await supabaseClient
-                    .from("catches")
-                    .delete()
-                    .eq("user_id", user.id);
+                const q = fbFns.query(
+                    fbFns.collection(fbDb, "catches"),
+                    fbFns.where("userId", "==", user.id)
+                );
+                const snapshot = await fbFns.getDocs(q);
+                await Promise.all(snapshot.docs.map((d) => fbFns.deleteDoc(d.ref)));
             } catch {
                 // Continue deletion even if cloud catch cleanup fails.
             }
 
             try {
-                await supabaseClient.auth.signOut();
+                if (fbAuth?.currentUser && fbFns.deleteUser) {
+                    await fbFns.deleteUser(fbAuth.currentUser);
+                } else if (fbAuth && fbFns.signOut) {
+                    await fbFns.signOut(fbAuth);
+                }
             } catch {
-                // Continue even if sign out fails.
+                // Continue even if Firebase user deletion fails.
             }
         }
 
@@ -1184,8 +1088,8 @@ function renderNav(user) {
 
         if (logout) {
             logout.addEventListener("click", async () => {
-                if (supabaseClient) {
-                    await supabaseClient.auth.signOut().catch(() => {});
+                if (fbAuth && fbFns.signOut) {
+                    await fbFns.signOut(fbAuth).catch(() => {});
                 }
 
                 localStorage.removeItem(STORAGE.currentUser);
@@ -1239,7 +1143,7 @@ function isUserSessionActive(user) {
         return true;
     }
 
-    // Valid if session came from Supabase sync (has id + email)
+    // Valid if session came from Firebase sync (has id + email)
     return Boolean(user.id && user.email);
 }
 
@@ -1403,6 +1307,28 @@ async function initRegister() {
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
 
+        const captchaToken = typeof grecaptcha !== "undefined" ? grecaptcha.getResponse() : "";
+        if (!captchaToken) {
+            setMessage(msg, t("register.captchaRequired", { fallback: "Please complete the reCAPTCHA verification." }), false);
+            return;
+        }
+
+        if (fbFunctions && fbFns.httpsCallable) {
+            try {
+                const verify = fbFns.httpsCallable(fbFunctions, "verifyRecaptcha");
+                const result = await verify({ token: captchaToken });
+                if (!result.data?.success) {
+                    setMessage(msg, t("register.captchaFailed", { fallback: "reCAPTCHA verification failed. Please try again." }), false);
+                    if (typeof grecaptcha !== "undefined") grecaptcha.reset();
+                    return;
+                }
+            } catch {
+                setMessage(msg, t("register.captchaFailed", { fallback: "reCAPTCHA verification failed. Please try again." }), false);
+                if (typeof grecaptcha !== "undefined") grecaptcha.reset();
+                return;
+            }
+        }
+
         const formData = new FormData(form);
         const username = String(formData.get("username") || "").trim();
         const email = String(formData.get("email") || "").trim().toLowerCase();
@@ -1439,36 +1365,24 @@ async function initRegister() {
 
         let authUserId = null;
 
-        if (supabaseClient) {
+        if (fbAuth && fbFns.createUserWithEmailAndPassword) {
             try {
-                const { data, error } = await supabaseClient.auth.signUp({
-                    email,
-                    password,
-                    options: { data: { username } }
-                });
-
-                if (error) {
-                    const msg2 = String(error.message || "").toLowerCase();
-                    if (msg2.includes("already registered") || msg2.includes("already exists") || msg2.includes("already been registered")) {
-                        setMessage(msg, t("register.alreadyExists", { fallback: "This email is already registered." }), false);
-                    } else {
-                        setMessage(msg, error.message || t("register.failed"), false);
-                    }
-                    return;
+                const cred = await fbFns.createUserWithEmailAndPassword(fbAuth, email, password);
+                if (fbFns.updateProfile) {
+                    await fbFns.updateProfile(cred.user, { displayName: username }).catch(() => {});
                 }
-
-                authUserId = data.user?.id || null;
-                if (data.session) {
-                    setMessage(msg, t("register.success"), true);
+                authUserId = cred.user.uid;
+            } catch (firebaseError) {
+                const code = String(firebaseError.code || "");
+                if (code.includes("already-in-use")) {
+                    setMessage(msg, t("register.alreadyExists", { fallback: "This email is already registered." }), false);
                 } else {
-                    setMessage(msg, t("register.verificationSent", { name: username, email }), true);
+                    setMessage(msg, firebaseError.message || t("register.failed"), false);
                 }
-            } catch {
-                setMessage(msg, t("register.cloudUnavailable"), false);
                 return;
             }
         } else {
-            setMessage(msg, hasSupabaseRuntimeConfig() ? t("register.cloudUnavailable") : t("register.supabaseConfigMissing"), false);
+            setMessage(msg, t("register.cloudUnavailable"), false);
             return;
         }
 
@@ -1544,21 +1458,15 @@ async function initLogin() {
             return;
         }
 
-        if (supabaseClient) {
+        if (fbAuth && fbFns.signInWithEmailAndPassword) {
             try {
-                const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-                if (error) {
-                    handleLoginFailure(t("login.badCredentials"));
-                    return;
-                }
-
-                const authUser = data.user;
+                const cred = await fbFns.signInWithEmailAndPassword(fbAuth, email, password);
+                const firebaseUser = cred.user;
                 localStorage.setItem(STORAGE.currentUser, JSON.stringify({
-                    id: authUser.id,
-                    username: authUser.user_metadata?.username || authUser.email || "User",
-                    email: authUser.email || email
+                    id: firebaseUser.uid,
+                    username: firebaseUser.displayName || firebaseUser.email || "User",
+                    email: firebaseUser.email || email
                 }));
-
                 window.location.href = "dashboard.html";
                 return;
             } catch {
@@ -1591,10 +1499,9 @@ async function initLogin() {
             return;
         }
 
-        if (supabaseClient) {
+        if (fbAuth && fbFns.sendPasswordResetEmail) {
             try {
-                const { error } = await supabaseClient.auth.resetPasswordForEmail(email);
-                if (error) throw error;
+                await fbFns.sendPasswordResetEmail(fbAuth, email);
                 setMessage(resetMsg, t("login.resetEmailSent"), true);
                 return;
             } catch {
@@ -1635,7 +1542,7 @@ async function initLogin() {
             return;
         }
 
-        if (supabaseClient) {
+        if (fbAuth) {
             setMessage(resetMsg, t("login.resetEmailSent"), true);
             return;
         }
@@ -2908,18 +2815,16 @@ async function getUserCatches(userId) {
         }));
     }
 
-    if (supabaseClient && userId) {
+    if (fbDb && fbFns.query && fbFns.collection && userId) {
         try {
-            const { data, error } = await supabaseClient
-                .from("catches")
-                .select("*")
-                .eq("user_id", userId)
-                .order("date", { ascending: false });
-
-            console.log(`[SUPABASE] SELECT catches for user_id=${userId}`, { data, error });
-
-            if (!error && data) {
-                const cloud = data.map(catchFromSupabase);
+            const q = fbFns.query(
+                fbFns.collection(fbDb, "catches"),
+                fbFns.where("userId", "==", userId),
+                fbFns.orderBy("date", "desc")
+            );
+            const snapshot = await fbFns.getDocs(q);
+            if (!snapshot.empty) {
+                const cloud = snapshot.docs.map(catchFromFirestore);
                 const cloudIds = new Set(cloud.map((item) => item.id));
                 localVisible.forEach((item) => {
                     if (!cloudIds.has(item.id)) {
@@ -3010,16 +2915,14 @@ async function saveCatch(catchRecord) {
     const user = getCurrentUser();
     const isGuest = Boolean(user?.isGuest);
 
-    if (!isGuest && supabaseClient) {
+    if (!isGuest && fbDb && fbFns.setDoc && fbFns.doc) {
         try {
-            const { error } = await supabaseClient
-                .from("catches")
-                .upsert(catchToSupabase(catchRecord));
-            if (error) {
-                console.warn("Supabase catch save failed, using local fallback.", error);
-            }
+            await fbFns.setDoc(
+                fbFns.doc(fbDb, "catches", catchRecord.id),
+                catchToFirestore(catchRecord)
+            );
         } catch (error) {
-            console.warn("Supabase catch save failed, using local fallback.", error);
+            console.warn("Firebase catch save failed, using local fallback.", error);
         }
     }
 
@@ -3041,16 +2944,14 @@ async function updateCatchRecord(catchRecord) {
         userEmail: String(catchRecord?.userEmail || user?.email || "").toLowerCase()
     };
 
-    if (!isGuest && supabaseClient) {
+    if (!isGuest && fbDb && fbFns.setDoc && fbFns.doc) {
         try {
-            const { error } = await supabaseClient
-                .from("catches")
-                .upsert(catchToSupabase(normalizedRecord));
-            if (error) {
-                console.warn("Supabase catch update failed, using local fallback.", error);
-            }
+            await fbFns.setDoc(
+                fbFns.doc(fbDb, "catches", normalizedRecord.id),
+                catchToFirestore(normalizedRecord)
+            );
         } catch (error) {
-            console.warn("Supabase catch update failed, using local fallback.", error);
+            console.warn("Firebase catch update failed, using local fallback.", error);
         }
     }
 
@@ -3068,17 +2969,11 @@ async function deleteCatchRecord(catchId, userId) {
     const user = getCurrentUser();
     const isGuest = Boolean(user?.isGuest);
 
-    if (!isGuest && supabaseClient) {
+    if (!isGuest && fbDb && fbFns.deleteDoc && fbFns.doc) {
         try {
-            const { error } = await supabaseClient
-                .from("catches")
-                .delete()
-                .eq("id", catchId);
-            if (error) {
-                console.warn("Supabase catch delete failed, using local fallback.", error);
-            }
+            await fbFns.deleteDoc(fbFns.doc(fbDb, "catches", catchId));
         } catch (error) {
-            console.warn("Supabase catch delete failed, using local fallback.", error);
+            console.warn("Firebase catch delete failed, using local fallback.", error);
         }
     }
 
@@ -3214,11 +3109,11 @@ async function saveImages(files, userId, catchId, options = {}) {
     // ALWAYS compress images - no option to disable
     const uploadFiles = await compressImageFiles(files);
 
-    if (supabaseClient && SUPABASE_CONFIG.storageBucket && userId) {
+    if (fbStorage && fbFns.ref && fbFns.uploadBytes && userId) {
         try {
-            return await uploadToSupabaseStorage(uploadFiles, userId, catchId);
+            return await uploadToFirebaseStorage(uploadFiles, userId, catchId);
         } catch (error) {
-            console.warn("Supabase storage upload failed, using local fallback.", error);
+            console.warn("Firebase storage upload failed, using local fallback.", error);
         }
     }
 
@@ -3226,30 +3121,19 @@ async function saveImages(files, userId, catchId, options = {}) {
     return base64Files.map((src) => ({ src }));
 }
 
-async function uploadToSupabaseStorage(files, userId, catchId) {
+async function uploadToFirebaseStorage(files, userId, catchId) {
     const uploaded = [];
 
     for (let index = 0; index < files.length; index += 1) {
         const file = files[index];
         const safeName = String(file.name || `image-${index}`).replace(/[^a-zA-Z0-9._-]/g, "_");
         const filePath = `${userId}/${catchId}/${Date.now()}-${index}-${safeName}`;
+        const storageRef = fbFns.ref(fbStorage, filePath);
 
-        const { error } = await supabaseClient.storage
-            .from(SUPABASE_CONFIG.storageBucket)
-            .upload(filePath, file, {
-                cacheControl: "3600",
-                upsert: false,
-                contentType: file.type || undefined
-            });
+        await fbFns.uploadBytes(storageRef, file);
+        const downloadUrl = await fbFns.getDownloadURL(storageRef);
 
-        if (error) {
-            throw error;
-        }
-
-        uploaded.push({
-            path: filePath,
-            src: await getSignedStorageUrl(filePath)
-        });
+        uploaded.push({ path: filePath, src: downloadUrl });
     }
 
     return uploaded;
