@@ -21,7 +21,9 @@ exports.verifyRecaptcha = functions.https.onCall(async (data) => {
             { method: "POST" }
         );
         const result = await response.json();
-        return { success: Boolean(result.success) };
+        // v3 requires score >= 0.5 (1.0 = human, 0.0 = bot)
+        const passed = Boolean(result.success) && (result.score === undefined || result.score >= 0.5);
+        return { success: passed };
     } catch {
         throw new functions.https.HttpsError("internal", "reCAPTCHA verification request failed.");
     }

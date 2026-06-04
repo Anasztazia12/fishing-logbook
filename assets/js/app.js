@@ -312,7 +312,6 @@ let fbApp = null;
 let fbAuth = null;
 let fbDb = null;
 let fbStorage = null;
-let fbFunctions = null;
 let fbFns = {};
 
 const PUBLIC_PAGES = new Set(["index", "login", "register"]);
@@ -445,6 +444,7 @@ const I18N = {
         "add.weatherPh": "Sunny, cloudy, windy...",
         "add.baits": "Baits used",
         "add.baitsPh": "Bait type, brand, color...",
+        "add.guestWarning": "Guest mode: this entry is stored locally on this device only and will be deleted when you log out. Register to save permanently.",
         "add.saving": "Saving...",
         "add.savedAndReload": "Saved. Opening logbook...",
         "add.saveFailed": "Saving failed. Please try again.",
@@ -693,6 +693,7 @@ const I18N = {
         "add.weatherPh": "Napos, felhős, szeles...",
         "add.baits": "Használt csalik",
         "add.baitsPh": "Csali típus, márka, szín...",
+        "add.guestWarning": "Vendég mód: ez a bejegyzés csak ezen az eszközön tárolódik, és kijelentkezéskor törlődik. Regisztrálj az állandó mentéshez.",
         "add.saving": "Mentés folyamatban...",
         "add.savedAndReload": "Adatok mentve. Napló megnyitása...",
         "add.saveFailed": "A mentés nem sikerült. Próbáld újra.",
@@ -877,19 +878,17 @@ async function loadFirebaseSdk() {
     const V = "10.12.4";
     const B = `https://www.gstatic.com/firebasejs/${V}`;
     try {
-        const [appMod, authMod, fsMod, stMod, fnsMod] = await Promise.all([
+        const [appMod, authMod, fsMod, stMod] = await Promise.all([
             import(`${B}/firebase-app.js`),
             import(`${B}/firebase-auth.js`),
             import(`${B}/firebase-firestore.js`),
-            import(`${B}/firebase-storage.js`),
-            import(`${B}/firebase-functions.js`)
+            import(`${B}/firebase-storage.js`)
         ]);
-        Object.assign(fbFns, appMod, authMod, fsMod, stMod, fnsMod);
+        Object.assign(fbFns, appMod, authMod, fsMod, stMod);
         fbApp = fbFns.initializeApp(FIREBASE_CONFIG);
         fbAuth = fbFns.getAuth(fbApp);
         fbDb = fbFns.getFirestore(fbApp);
         fbStorage = fbFns.getStorage(fbApp);
-        fbFunctions = fbFns.getFunctions(fbApp);
     } catch {
         // SDK load failure keeps app functional via localStorage fallback.
     }
@@ -1194,7 +1193,14 @@ function renderNav(user) {
 
         if (logout) {
             logout.addEventListener("click", async () => {
-                if (fbAuth && fbFns.signOut) {
+                const loggingOutUser = getCurrentUser();
+
+                if (loggingOutUser?.isGuest) {
+                    const allCatches = readStorage(STORAGE.catches, []);
+                    writeStorage(STORAGE.catches, allCatches.filter((c) => c.userId !== loggingOutUser.id));
+                    const allPlaces = readStorage(STORAGE.recommendedPlaces, []);
+                    writeStorage(STORAGE.recommendedPlaces, allPlaces.filter((p) => p.userId !== loggingOutUser.id));
+                } else if (fbAuth && fbFns.signOut) {
                     await fbFns.signOut(fbAuth).catch(() => {});
                 }
 
@@ -1383,7 +1389,10 @@ function ensureTopbarLanguageSwitch() {
 }
 
 function initIndex(user) {
-    // No-op: guest button logic handled globally in DOMContentLoaded
+    const contactHeroBtn = document.getElementById("ContactForm");
+    if (contactHeroBtn) {
+        contactHeroBtn.addEventListener("click", openContactModal);
+    }
 }
 
 function startGuestSession() {
@@ -1418,24 +1427,10 @@ async function initRegister() {
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
 
-        const captchaToken = typeof grecaptcha !== "undefined" ? grecaptcha.getResponse() : "";
-        if (!captchaToken) {
-            setMessage(msg, t("register.captchaRequired", { fallback: "Please complete the reCAPTCHA verification." }), false);
-            return;
-        }
-
-        if (fbFunctions && fbFns.httpsCallable) {
-            try {
-                const verify = fbFns.httpsCallable(fbFunctions, "verifyRecaptcha");
-                const result = await verify({ token: captchaToken });
-                if (!result.data?.success) {
-                    setMessage(msg, t("register.captchaFailed", { fallback: "reCAPTCHA verification failed. Please try again." }), false);
-                    if (typeof grecaptcha !== "undefined") grecaptcha.reset();
-                    return;
-                }
-            } catch {
-                setMessage(msg, t("register.captchaFailed", { fallback: "reCAPTCHA verification failed. Please try again." }), false);
-                if (typeof grecaptcha !== "undefined") grecaptcha.reset();
+        if (typeof hcaptcha !== "undefined") {
+            const captchaToken = hcaptcha.getResponse();
+            if (!captchaToken) {
+                setMessage(msg, t("register.captchaRequired", { fallback: "Please complete the hCaptcha verification." }), false);
                 return;
             }
         }
@@ -1759,6 +1754,14 @@ async function initAddCatch(user) {
         return;
     }
 
+    if (user.isGuest) {
+        const banner = document.createElement("div");
+        banner.className = "message guest-warning";
+        banner.style.cssText = "margin-bottom:1rem;padding:.75rem 1rem;border-radius:.5rem;background:var(--color-warning,#fff3cd);color:#856404;border:1px solid #ffeaa7;";
+        banner.textContent = t("add.guestWarning");
+        form.parentElement.insertBefore(banner, form);
+    }
+
     dateInput.value = new Date().toISOString().slice(0, 10);
     addFishRow(fishRows);
     addFishRow(fishRows);
@@ -1966,7 +1969,7 @@ async function initLogbook(user) {
         filterPanel.hidden = true;
     }
 
-    let didSearch = fromSave;
+    let didSearch = true;
 
     toggleFilterPanelBtn.addEventListener("click", () => {
         if (filterPanel.hidden) {
@@ -3217,10 +3220,13 @@ async function saveImages(files, userId, catchId, options = {}) {
         return [];
     }
 
-    // ALWAYS compress images - no option to disable
+    // ALWAYS compress images before upload or local storage
     const uploadFiles = await compressImageFiles(files);
 
-    if (fbStorage && fbFns.ref && fbFns.uploadBytes && userId) {
+    const currentUser = getCurrentUser();
+    const isGuest = Boolean(currentUser?.isGuest);
+
+    if (!isGuest && fbStorage && fbFns.ref && fbFns.uploadBytes && userId) {
         try {
             return await uploadToFirebaseStorage(uploadFiles, userId, catchId);
         } catch (error) {
