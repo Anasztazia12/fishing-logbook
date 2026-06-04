@@ -454,8 +454,8 @@ const I18N = {
         "add.addFishRow": "Add fish row",
         "add.uploadPhotos": "Upload photos",
         "add.uploadCamera": "Take photo with phone camera",
-        "add.compressImages": "Compress photos before upload (recommended)",
-        "add.compressHint": "Reduces image size and speeds up saving.",
+        "add.compressImages": "",
+        "add.compressHint": "Photos are automatically compressed to save storage space.",
         "add.notes": "Notes",
         "add.notesPh": "What happened on this fishing trip?",
         "add.save": "Save fishing result",
@@ -703,8 +703,8 @@ const I18N = {
         "add.addFishRow": "Hal sor hozzáadása",
         "add.uploadPhotos": "Fotók feltöltése",
         "add.uploadCamera": "Fotó készítése telefon kamerával",
-        "add.compressImages": "Fotók tömörítése feltöltés előtt (ajánlott)",
-        "add.compressHint": "Csökkenti a képek méretét, és gyorsítja a mentést.",
+        "add.compressImages": "",
+        "add.compressHint": "A fotók automatikusan tömörítésre kerülnek a tárhely kímélése érdekében.",
         "add.notes": "Jegyzet",
         "add.notesPh": "Mi történt ezen a horgászaton?",
         "add.save": "Horgászati eredmény mentése",
@@ -3872,7 +3872,6 @@ function applyPageTranslations(page, user) {
             setText("#addFishRow", t("add.addFishRow"));
             setText('label[for="catchImages"]', t("add.uploadPhotos"));
             setText('label[for="catchCamera"]', t("add.uploadCamera"));
-            setText("#compressImagesLabel", t("add.compressImages"));
             setText("#compressImagesHint", t("add.compressHint"));
             setText('label[for="notes"]', t("add.notes"));
             setText('#catchForm button[type="submit"]', t("add.save"));
