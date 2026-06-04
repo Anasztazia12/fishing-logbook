@@ -365,12 +365,14 @@ const I18N = {
         "index.registerBtn": "Registration",
         "login.title": "Login",
         "login.subtitle": "Access your fishing dashboard.",
-        "login.email": "Email",
+        "login.email": "Email or username",
         "login.password": "Password",
         "login.passwordConfirm": "Confirm password",
+        "login.showPassword": "Show password",
+        "login.hidePassword": "Hide password",
         "login.button": "Login",
         "login.emailInvalid": "Email format is invalid.",
-        "login.emailNotFound": "No account found with this email.",
+        "login.emailNotFound": "No account found with this email or username.",
         "login.passwordWrong": "Password is incorrect.",
         "login.badCredentials": "Email or password is incorrect.",
         "login.forgotTitle": "Forgot password?",
@@ -1523,6 +1525,9 @@ async function initRegister() {
 async function initLogin() {
     const form = document.getElementById("loginForm");
     const msg = document.getElementById("loginMessage");
+    const passwordInput = document.getElementById("loginPassword");
+    const togglePasswordBtn = document.getElementById("toggleLoginPassword");
+    setupPasswordToggle(passwordInput, togglePasswordBtn, "login");
     const forgotTrigger = document.getElementById("openResetModal");
     const resetModal = document.getElementById("resetModal");
     const closeResetModalBtn = document.getElementById("closeResetModal");
@@ -1562,10 +1567,21 @@ async function initLogin() {
         event.preventDefault();
 
         const formData = new FormData(form);
-        const email = String(formData.get("email") || "").trim().toLowerCase();
+        const rawInput = String(formData.get("email") || "").trim();
         const password = String(formData.get("password") || "").trim();
 
-        if (!isValidEmail(email)) {
+        // Resolve username → email if needed
+        let email = rawInput.toLowerCase();
+        if (!rawInput.includes("@")) {
+            const users = readStorage(STORAGE.users, []);
+            const byUsername = users.find((u) => String(u.username || "").toLowerCase() === rawInput.toLowerCase());
+            if (byUsername?.email) {
+                email = byUsername.email.toLowerCase();
+            } else {
+                handleLoginFailure(t("login.emailNotFound"));
+                return;
+            }
+        } else if (!isValidEmail(email)) {
             handleLoginFailure(t("login.emailInvalid"));
             return;
         }
