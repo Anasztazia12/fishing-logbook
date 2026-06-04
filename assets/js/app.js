@@ -860,6 +860,7 @@ let currentWeightUnit = "kg";
 
 async function bootstrapApp() {
     ensureBootstrapStyles();
+    await migrateLocalImagesToIDB();
     await loadFirebaseSdk();
     await syncAuthState();
 
@@ -898,6 +899,30 @@ async function bootstrapApp() {
             break;
         default:
             break;
+    }
+}
+
+async function migrateLocalImagesToIDB() {
+    try {
+        const catches = readStorage(STORAGE.catches, []);
+        let changed = false;
+        const migrated = await Promise.all(catches.map(async (item) => {
+            if (!item?.id || !Array.isArray(item.imageData)) return item;
+            const base64 = item.imageData.filter((img) => String(img?.src || "").startsWith("data:"));
+            if (base64.length === 0) return item;
+            const existing = await ImageStore.load(item.id);
+            if (existing.length === 0) {
+                await ImageStore.save(item.id, base64);
+            }
+            changed = true;
+            const rest = item.imageData.filter((img) => !String(img?.src || "").startsWith("data:"));
+            return { ...item, imageData: [...rest, { idbRef: item.id }] };
+        }));
+        if (changed) {
+            writeCatches(migrated);
+        }
+    } catch (e) {
+        console.warn("Image migration failed", e);
     }
 }
 
@@ -1178,7 +1203,7 @@ async function deleteCurrentAccount() {
         writeStorage(STORAGE.users, users.filter((u) => u.email !== user.email));
 
         const catches = readStorage(STORAGE.catches, []);
-        writeStorage(STORAGE.catches, catches.filter((item) => item.userId !== user.id));
+        writeCatches(catches.filter((item) => item.userId !== user.id));
 
         localStorage.removeItem(STORAGE.currentUser);
         window.alert(t("account.deleted"));
@@ -1249,7 +1274,9 @@ function renderNav(user) {
 
                 if (loggingOutUser?.isGuest) {
                     const allCatches = readStorage(STORAGE.catches, []);
-                    writeStorage(STORAGE.catches, allCatches.filter((c) => c.userId !== loggingOutUser.id));
+                    const guestCatches = allCatches.filter((c) => c.userId === loggingOutUser.id);
+                    await ImageStore.removeMany(guestCatches.map((c) => c.id));
+                    writeCatches(allCatches.filter((c) => c.userId !== loggingOutUser.id));
                     const allPlaces = readStorage(STORAGE.recommendedPlaces, []);
                     writeStorage(STORAGE.recommendedPlaces, allPlaces.filter((p) => p.userId !== loggingOutUser.id));
                 } else if (fbAuth && fbFns.signOut) {
@@ -3112,7 +3139,7 @@ async function saveCatch(catchRecord) {
     } else {
         catches[index] = catchRecord;
     }
-    writeStorage(STORAGE.catches, catches);
+    writeCatches(catches);
 }
 
 async function updateCatchRecord(catchRecord) {
@@ -3141,7 +3168,7 @@ async function updateCatchRecord(catchRecord) {
     } else {
         catches[index] = normalizedRecord;
     }
-    writeStorage(STORAGE.catches, catches);
+    writeCatches(catches);
 }
 
 async function deleteCatchRecord(catchId, userId) {
@@ -3163,7 +3190,7 @@ async function deleteCatchRecord(catchId, userId) {
 
     const catches = readStorage(STORAGE.catches, []);
     const filtered = catches.filter((item) => item.id !== catchId || (userId && item.userId !== userId));
-    writeStorage(STORAGE.catches, filtered);
+    writeCatches(filtered);
 }
 
 function editCatchViaPrompts(catchRecord) {
@@ -3745,6 +3772,25 @@ function readStorage(key, fallback) {
 
 function writeStorage(key, value) {
     localStorage.setItem(key, JSON.stringify(value));
+}
+
+function writeCatches(catches) {
+    // Always strip base64 images — they live in IndexedDB now
+    const clean = (catches || []).map((item) => ({
+        ...item,
+        imageData: (item.imageData || []).filter((img) => !String(img?.src || "").startsWith("data:"))
+    }));
+    try {
+        localStorage.setItem(STORAGE.catches, JSON.stringify(clean));
+    } catch {
+        // Free space then retry
+        localStorage.removeItem(STORAGE.catches);
+        try {
+            localStorage.setItem(STORAGE.catches, JSON.stringify(clean));
+        } catch (e2) {
+            console.warn("writeCatches failed even after clearing", e2);
+        }
+    }
 }
 
 function setMessage(el, text, ok) {
