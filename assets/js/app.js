@@ -205,6 +205,33 @@ function setBackground(img) {
     }
 }
 
+// IndexedDB image store — bypasses the 5MB localStorage limit
+const ImageStore = (() => {
+    let _db = null;
+    function open() {
+        if (_db) return Promise.resolve(_db);
+        return new Promise((resolve, reject) => {
+            const req = indexedDB.open("flb_imagestore", 1);
+            req.onupgradeneeded = (e) => e.target.result.createObjectStore("images");
+            req.onsuccess = (e) => { _db = e.target.result; resolve(_db); };
+            req.onerror = () => reject(req.error);
+        });
+    }
+    function tx(mode) { return open().then(db => db.transaction("images", mode).objectStore("images")); }
+    return {
+        async save(catchId, images) {
+            try { const s = await tx("readwrite"); await new Promise((res, rej) => { const r = s.put(images, catchId); r.onsuccess = res; r.onerror = () => rej(r.error); }); } catch (e) { console.warn("ImageStore.save", e); }
+        },
+        async load(catchId) {
+            try { const s = await tx("readonly"); return await new Promise((res, rej) => { const r = s.get(catchId); r.onsuccess = () => res(r.result || []); r.onerror = () => rej(r.error); }); } catch { return []; }
+        },
+        async remove(catchId) {
+            try { const s = await tx("readwrite"); await new Promise((res, rej) => { const r = s.delete(catchId); r.onsuccess = res; r.onerror = () => rej(r.error); }); } catch (e) { console.warn("ImageStore.remove", e); }
+        },
+        async removeMany(ids) { for (const id of (ids || [])) await this.remove(id); }
+    };
+})();
+
 function applySavedBackground() {
     const img = localStorage.getItem("flb_bg");
     if (img && AVAILABLE_BACKGROUNDS.includes(img)) {
@@ -973,16 +1000,15 @@ function normalizeImageEntry(entry) {
 }
 
 function getImageEntrySrc(entry) {
+    if (entry?.idbRef) {
+        return ""; // loaded async by enrichCatchImages
+    }
     const normalized = normalizeImageEntry(entry);
     if (!normalized) {
         return "";
     }
 
-    if (normalized.src) {
-        return normalized.src;
-    }
-
-    return "";
+    return normalized.src || "";
 }
 
 async function getFirebaseDownloadUrl(path) {
@@ -999,7 +1025,25 @@ async function getFirebaseDownloadUrl(path) {
 
 async function enrichCatchImages(catchRecord) {
     const imageData = Array.isArray(catchRecord?.imageData) ? catchRecord.imageData : [];
-    const resolved = await Promise.all(imageData.map(async (entry) => {
+
+    // Expand IDB references into actual image entries
+    const expanded = [];
+    for (const entry of imageData) {
+        if (entry?.idbRef) {
+            const idbImages = await ImageStore.load(entry.idbRef);
+            expanded.push(...idbImages);
+        } else {
+            expanded.push(entry);
+        }
+    }
+
+    // If catch has no imageData at all, check IDB by catchId (e.g. loaded from Firestore)
+    if (expanded.length === 0 && catchRecord?.id) {
+        const idbImages = await ImageStore.load(catchRecord.id);
+        expanded.push(...idbImages);
+    }
+
+    const resolved = await Promise.all(expanded.map(async (entry) => {
         const normalized = normalizeImageEntry(entry);
         if (!normalized) {
             return null;
@@ -1033,7 +1077,7 @@ async function enrichCatchCollection(catches) {
 function quickNormalizeCatchImages(catchRecord) {
     const imageData = Array.isArray(catchRecord?.imageData) ? catchRecord.imageData : [];
     const normalized = imageData
-        .map((entry) => normalizeImageEntry(entry))
+        .map((entry) => entry?.idbRef ? entry : normalizeImageEntry(entry))
         .filter(Boolean);
 
     return {
@@ -3115,6 +3159,8 @@ async function deleteCatchRecord(catchId, userId) {
         }
     }
 
+    await ImageStore.remove(catchId);
+
     const catches = readStorage(STORAGE.catches, []);
     const filtered = catches.filter((item) => item.id !== catchId || (userId && item.userId !== userId));
     writeStorage(STORAGE.catches, filtered);
@@ -3258,8 +3304,11 @@ async function saveImages(files, userId, catchId, options = {}) {
         }
     }
 
+    // Save compressed images to IndexedDB (no 5MB localStorage limit)
     const base64Files = await filesToBase64(uploadFiles);
-    return base64Files.map((src) => ({ src }));
+    const images = base64Files.map((src) => ({ src }));
+    await ImageStore.save(catchId, images);
+    return [{ idbRef: catchId }];
 }
 
 async function uploadToFirebaseStorage(files, userId, catchId) {
