@@ -112,6 +112,92 @@ function closeBgModal(keepPreview = false) {
     }
 }
 
+function openContactModal() {
+    let modal = document.getElementById("contactModal");
+
+    if (!modal) {
+        modal = document.createElement("div");
+        modal.id = "contactModal";
+        modal.className = "modal-overlay";
+        modal.innerHTML = `
+            <div class="modal-card">
+                <div class="card-head" style="justify-content:space-between;">
+                    <h2>${t("contact.title")}</h2>
+                    <button type="button" class="btn btn-secondary" id="closeContactModal">${t("common.close")}</button>
+                </div>
+                <form id="contactForm" class="stack" novalidate>
+                    <input type="hidden" name="access_key" value="b4c66ee3-69e7-4c59-a8c9-77d96ad55ac9">
+                    <label for="contactName">${t("contact.name")}</label>
+                    <input type="text" id="contactName" name="name" required>
+                    <label for="contactEmail">${t("contact.email")}</label>
+                    <input type="email" id="contactEmail" name="email" required>
+                    <label for="contactMessage">${t("contact.message")}</label>
+                    <textarea id="contactMessage" name="message" rows="4" required></textarea>
+                    <div class="h-captcha" data-captcha="true"></div>
+                    <p id="contactResult" class="message" aria-live="polite"></p>
+                    <button type="submit" class="btn btn-primary" id="contactSubmitBtn">${t("contact.send")}</button>
+                </form>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        // Load Web3Forms script once
+        if (!document.querySelector('script[src*="web3forms"]')) {
+            const script = document.createElement("script");
+            script.src = "https://web3forms.com/client/script.js";
+            script.async = true;
+            script.defer = true;
+            document.body.appendChild(script);
+        }
+
+        const form = document.getElementById("contactForm");
+        const result = document.getElementById("contactResult");
+        const submitBtn = document.getElementById("contactSubmitBtn");
+
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const formData = new FormData(form);
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = t("contact.sending");
+            submitBtn.disabled = true;
+            result.textContent = "";
+            result.className = "message";
+
+            try {
+                const response = await fetch("https://api.web3forms.com/submit", {
+                    method: "POST",
+                    body: formData
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    result.textContent = t("contact.success");
+                    result.classList.add("success");
+                    form.reset();
+                } else {
+                    result.textContent = data.message || t("contact.error");
+                    result.classList.add("error");
+                }
+            } catch {
+                result.textContent = t("contact.error");
+                result.classList.add("error");
+            } finally {
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+            }
+        });
+
+        document.getElementById("closeContactModal").addEventListener("click", () => {
+            modal.style.display = "none";
+        });
+
+        modal.addEventListener("click", (e) => {
+            if (e.target === modal) modal.style.display = "none";
+        });
+    }
+
+    modal.style.display = "flex";
+}
+
 function setBackground(img) {
     if (AVAILABLE_BACKGROUNDS.includes(img)) {
         localStorage.setItem("flb_bg", img);
@@ -254,6 +340,15 @@ const I18N = {
         "nav.login": "Login",
         "nav.register": "Register",
         "nav.guest": "Guest",
+        "nav.contact": "Contact",
+        "contact.title": "Contact",
+        "contact.name": "Name",
+        "contact.email": "Email",
+        "contact.message": "Message",
+        "contact.send": "Send",
+        "contact.sending": "Sending...",
+        "contact.success": "Your message has been sent!",
+        "contact.error": "Something went wrong. Please try again.",
         "common.close": "Close",
         "common.changeBg": "Change background",
         "common.pictures": "Pictures",
@@ -493,6 +588,15 @@ const I18N = {
         "nav.login": "Belépés",
         "nav.register": "Regisztráció",
         "nav.guest": "Vendég",
+        "nav.contact": "Kapcsolat",
+        "contact.title": "Kapcsolat",
+        "contact.name": "Név",
+        "contact.email": "Email",
+        "contact.message": "Üzenet",
+        "contact.send": "Küldés",
+        "contact.sending": "Küldés...",
+        "contact.success": "Üzeneted elküldve!",
+        "contact.error": "Valami hiba történt. Próbáld újra.",
         "common.close": "Bezárás",
         "common.changeBg": "Háttér változtatása",
         "common.pictures": "Képek",
@@ -1057,6 +1161,7 @@ function renderNav(user) {
             `<a href="places.html?mode=wishlist">${t("nav.recommendedPlaces")}</a>`,
             `</div>`,
             `<button type="button" class="btn-link" id="changeBgBtn">${t("common.changeBg")}</button>`,
+            `<button type="button" class="btn-link" id="contactBtn">${t("nav.contact")}</button>`,
             `<button type="button" class="btn-link" id="logoutBtn">${t("nav.logout")}</button>`,
             effectiveUser.isGuest ? "" : `<div class="nav-separator" role="separator" aria-hidden="true"></div>`,
             effectiveUser.isGuest ? "" : `<button type="button" class="btn-link btn-danger-link" id="deleteAccountBtn">${t("nav.deleteAccount")}</button>`
@@ -1066,7 +1171,8 @@ function renderNav(user) {
             `<a href="index.html">${t("nav.home")}</a>`,
             `<a href="login.html">${t("nav.login")}</a>`,
             `<a href="register.html">${t("nav.register")}</a>`,
-            `<button type="button" class="btn-link" id="changeBgBtn">${t("common.changeBg")}</button>`
+            `<button type="button" class="btn-link" id="changeBgBtn">${t("common.changeBg")}</button>`,
+            `<button type="button" class="btn-link" id="contactBtn">${t("nav.contact")}</button>`
         ].join("");
     }
     nav.innerHTML = navHtml;
@@ -1121,6 +1227,11 @@ function renderNav(user) {
         const bgBtn = document.getElementById("changeBgBtn");
         if (bgBtn) {
             bgBtn.addEventListener("click", openBgModal);
+        }
+
+        const contactBtn = document.getElementById("contactBtn");
+        if (contactBtn) {
+            contactBtn.addEventListener("click", openContactModal);
         }
     }, 0);
     ensureTopbarLanguageSwitch();
