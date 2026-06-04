@@ -208,7 +208,8 @@ function setBackground(img) {
 // IndexedDB image store — bypasses the 5MB localStorage limit
 const ImageStore = (() => {
     let _db = null;
-    function open() {
+
+    function openDB() {
         if (_db) return Promise.resolve(_db);
         return new Promise((resolve, reject) => {
             const req = indexedDB.open("flb_imagestore", 1);
@@ -217,18 +218,61 @@ const ImageStore = (() => {
             req.onerror = () => reject(req.error);
         });
     }
-    function tx(mode) { return open().then(db => db.transaction("images", mode).objectStore("images")); }
+
+    // IMPORTANT: transaction must be created and used without any await in between
+    // to avoid TransactionInactiveError auto-commit
+    async function save(catchId, images) {
+        try {
+            const db = await openDB();
+            await new Promise((resolve, reject) => {
+                const tx = db.transaction("images", "readwrite");
+                const store = tx.objectStore("images");
+                const req = store.put(images, catchId);
+                req.onsuccess = () => resolve();
+                req.onerror = () => reject(req.error);
+                tx.onerror = (e) => reject(e);
+            });
+        } catch (e) {
+            console.warn("ImageStore.save failed", e);
+        }
+    }
+
+    async function load(catchId) {
+        try {
+            const db = await openDB();
+            return await new Promise((resolve, reject) => {
+                const tx = db.transaction("images", "readonly");
+                const store = tx.objectStore("images");
+                const req = store.get(catchId);
+                req.onsuccess = () => resolve(req.result || []);
+                req.onerror = () => reject(req.error);
+            });
+        } catch {
+            return [];
+        }
+    }
+
+    async function remove(catchId) {
+        try {
+            const db = await openDB();
+            await new Promise((resolve, reject) => {
+                const tx = db.transaction("images", "readwrite");
+                const store = tx.objectStore("images");
+                const req = store.delete(catchId);
+                req.onsuccess = () => resolve();
+                req.onerror = () => reject(req.error);
+                tx.onerror = (e) => reject(e);
+            });
+        } catch (e) {
+            console.warn("ImageStore.remove failed", e);
+        }
+    }
+
     return {
-        async save(catchId, images) {
-            try { const s = await tx("readwrite"); await new Promise((res, rej) => { const r = s.put(images, catchId); r.onsuccess = res; r.onerror = () => rej(r.error); }); } catch (e) { console.warn("ImageStore.save", e); }
-        },
-        async load(catchId) {
-            try { const s = await tx("readonly"); return await new Promise((res, rej) => { const r = s.get(catchId); r.onsuccess = () => res(r.result || []); r.onerror = () => rej(r.error); }); } catch { return []; }
-        },
-        async remove(catchId) {
-            try { const s = await tx("readwrite"); await new Promise((res, rej) => { const r = s.delete(catchId); r.onsuccess = res; r.onerror = () => rej(r.error); }); } catch (e) { console.warn("ImageStore.remove", e); }
-        },
-        async removeMany(ids) { for (const id of (ids || [])) await this.remove(id); }
+        save,
+        load,
+        remove,
+        async removeMany(ids) { for (const id of (ids || [])) await remove(id); }
     };
 })();
 
@@ -2034,14 +2078,6 @@ async function initLogbook(user) {
         return;
     }
 
-    // Show filter description only if there's data to filter
-    const updateFilterDescriptionVisibility = () => {
-        if (filterDescription) {
-            filterDescription.hidden = catches.length === 0 || !filterPanelOpened;
-        }
-    };
-
-    // Prevent duplicate initialization (remove old listeners)
     if (window.__logbookInitialized) {
         return;
     }
@@ -2051,57 +2087,26 @@ async function initLogbook(user) {
     const fromSave = new URLSearchParams(window.location.search).get("fromSave") === "1";
     const savedCatchId = new URLSearchParams(window.location.search).get("savedCatchId") || "";
     let filterPanelOpened = quick === "caught";
+
     if (quick === "caught") {
         const fishMinInput = document.getElementById("filterFishMin");
-        if (fishMinInput) {
-            fishMinInput.value = "1";
-        }
+        if (fishMinInput) fishMinInput.value = "1";
         filterPanel.hidden = false;
     } else {
         filterPanel.hidden = true;
     }
 
+    if (fromSave) form.reset();
+
+    let catches = [];
+    let focusedSavedCatch = false;
     let didSearch = true;
 
-    toggleFilterPanelBtn.addEventListener("click", () => {
-        if (filterPanel.hidden) {
-            filterPanel.hidden = false;
-            filterPanelOpened = true;
-            updateFilterDescriptionVisibility();
-            return;
+    const updateFilterDescriptionVisibility = () => {
+        if (filterDescription) {
+            filterDescription.hidden = catches.length === 0 || !filterPanelOpened;
         }
-
-        didSearch = true;
-        render();
-    });
-
-    if (fromSave) {
-        form.reset();
-    }
-
-    let catches = await getUserCatches(user.id);
-    let focusedSavedCatch = false;
-
-    // **KRITIKUS FIX**: Ha idejöttünk save után, biztosan kell lennie adatnak
-    // Ha üres, próbáljuk újra betölteni (max 3 próba)
-    if (fromSave && catches.length === 0) {
-        let retries = 0;
-        while (catches.length === 0 && retries < 3) {
-            await new Promise(resolve => setTimeout(resolve, 200)); // várakozás 200ms
-            catches = await getUserCatches(user.id);
-            retries += 1;
-        }
-    }
-
-    if (fromSave && savedCatchId && !catches.some((item) => item.id === savedCatchId)) {
-        const storedCatch = getStoredCatchById(savedCatchId);
-        if (storedCatch) {
-            catches = quickNormalizeCatchCollection([storedCatch, ...catches.filter((item) => item.id !== savedCatchId)]);
-        }
-    }
-
-    // **DEBUG**: Log a betöltött catches számát
-    console.log(`[LOGBOOK] Loaded ${catches.length} catches for user ${user.id}`, catches);
+    };
 
     const openDetailsModal = (catchId) => {
         const selected = catches.find((item) => item.id === catchId);
@@ -2187,6 +2192,18 @@ async function initLogbook(user) {
             }
         }
     };
+
+    // ── Attach all listeners IMMEDIATELY before any async call ──
+    toggleFilterPanelBtn.addEventListener("click", () => {
+        if (filterPanel.hidden) {
+            filterPanel.hidden = false;
+            filterPanelOpened = true;
+            updateFilterDescriptionVisibility();
+            return;
+        }
+        didSearch = true;
+        render();
+    });
 
     form.addEventListener("submit", (event) => {
         event.preventDefault();
@@ -2282,32 +2299,51 @@ async function initLogbook(user) {
         }
     });
 
-    if (catches.length > 0) {
-        if (fromSave) {
-            didSearch = true;
+    // ── STEP 1: Load from localStorage IMMEDIATELY and render ──
+    const allLocal = readStorage(STORAGE.catches, []);
+    const ownLocal = allLocal.filter((item) => {
+        const itemUserId = String(item?.userId || "");
+        const itemEmail = String(item?.userEmail || "").toLowerCase();
+        const userEmail = String(user.email || "").toLowerCase();
+        return (user.id && itemUserId === String(user.id)) ||
+               (userEmail && itemEmail && itemEmail === userEmail) ||
+               (!itemUserId && !itemEmail);
+    });
+    catches = quickNormalizeCatchCollection(
+        (ownLocal.length > 0 ? ownLocal : allLocal).sort((a, b) =>
+            new Date(b.date || b.createdAt).getTime() - new Date(a.date || a.createdAt).getTime()
+        )
+    );
+
+    // Ensure just-saved catch is in the list
+    if (fromSave && savedCatchId && !catches.some((c) => c.id === savedCatchId)) {
+        const saved = getStoredCatchById(savedCatchId);
+        if (saved) {
+            catches = quickNormalizeCatchCollection([saved, ...catches.filter((c) => c.id !== savedCatchId)]);
         }
     }
 
-    // Update filter description visibility based on data availability
     updateFilterDescriptionVisibility();
-
-    // Initial render to show catches if they exist
     render();
 
-    // Async image loading in the background after initial render
-    // This enriches the image URLs with signed storage URLs without blocking initial display
-    (async () => {
-        try {
-            const enriched = await enrichCatchCollection(catches);
-            catches = enriched;
-            // Re-render to update images with signed URLs
+    // ── STEP 2: Try Firestore in background, re-render if better data ──
+    getUserCatches(user.id).then((cloudCatches) => {
+        if (cloudCatches.length >= catches.length) {
+            catches = cloudCatches;
             updateFilterDescriptionVisibility();
             render();
-        } catch (error) {
-            console.warn("Async image enrichment failed:", error);
-            // App continues with non-enriched images (base64 or paths)
         }
-    })();
+        return enrichCatchCollection(catches);
+    }).then((enriched) => {
+        catches = enriched;
+        render();
+    }).catch((err) => {
+        console.warn("Background sync/enrichment failed", err);
+        enrichCatchCollection(catches).then((enriched) => {
+            catches = enriched;
+            render();
+        }).catch(() => {});
+    });
 }
 
 function getStoredCatchById(catchId) {
