@@ -126,7 +126,7 @@ function openContactModal() {
                     <button type="button" class="btn btn-secondary" id="closeContactModal">${t("common.close")}</button>
                 </div>
                 <form id="contactForm" class="stack" novalidate>
-                    <input type="hidden" name="access_key" value="b4c66ee3-69e7-4c59-a8c9-77d96ad55ca9">
+                    <input type="hidden" name="access_key" value="7b67f80e-cda2-4a15-a721-bc6023b9ef0d">
                     <input type="hidden" name="subject" value="New contact message - Fishing Logbook">
                     <input type="checkbox" name="botcheck" style="display:none" tabindex="-1" autocomplete="off">
                     <label for="contactName">${t("contact.name")}</label>
@@ -135,7 +135,7 @@ function openContactModal() {
                     <input type="email" id="contactEmail" name="email" required>
                     <label for="contactMessage">${t("contact.message")}</label>
                     <textarea id="contactMessage" name="message" rows="4" required></textarea>
-                    <div id="contactCaptcha"></div>
+                    <div class="h-captcha" data-captcha="true"></div>
                     <p id="contactResult" class="message" aria-live="polite"></p>
                     <button type="submit" class="btn btn-primary" id="contactSubmitBtn">${t("contact.send")}</button>
                 </form>
@@ -143,55 +143,13 @@ function openContactModal() {
         `;
         document.body.appendChild(modal);
 
-        // Load hCaptcha and render into the contact form
-        let contactCaptchaId = null;
-        const CONTACT_CAPTCHA_KEY = "10000000-ffff-ffff-ffff-000000000001";
-
-        function renderContactCaptcha() {
-            const div = document.getElementById("contactCaptcha");
-            if (!div || contactCaptchaId !== null) return;
-            if (typeof hcaptcha !== "undefined") {
-                contactCaptchaId = hcaptcha.render(div, { sitekey: CONTACT_CAPTCHA_KEY });
-            }
-        }
-
-        if (!document.querySelector('script[src*="hcaptcha"]')) {
-            const hcScript = document.createElement("script");
-            hcScript.src = "https://js.hcaptcha.com/1/api.js";
-            hcScript.async = true;
-            hcScript.defer = true;
-            hcScript.onload = () => renderContactCaptcha();
-            document.body.appendChild(hcScript);
-        } else {
-            setTimeout(renderContactCaptcha, 100);
-        }
-
         const form = document.getElementById("contactForm");
         const result = document.getElementById("contactResult");
         const submitBtn = document.getElementById("contactSubmitBtn");
 
         form.addEventListener("submit", async (e) => {
             e.preventDefault();
-
-            if (typeof hcaptcha !== "undefined") {
-                const token = contactCaptchaId !== null
-                    ? hcaptcha.getResponse(contactCaptchaId)
-                    : hcaptcha.getResponse();
-                if (!token) {
-                    result.textContent = t("register.captchaRequired", { fallback: "Please complete the verification." });
-                    result.className = "message error";
-                    return;
-                }
-            }
-
             const formData = new FormData(form);
-            if (typeof hcaptcha !== "undefined") {
-                const token = contactCaptchaId !== null
-                    ? hcaptcha.getResponse(contactCaptchaId)
-                    : hcaptcha.getResponse();
-                formData.append("h-captcha-response", token);
-            }
-
             const originalText = submitBtn.textContent;
             submitBtn.textContent = t("contact.sending");
             submitBtn.disabled = true;
@@ -208,9 +166,7 @@ function openContactModal() {
                     result.textContent = t("contact.success");
                     result.classList.add("success");
                     form.reset();
-                    if (typeof hcaptcha !== "undefined" && contactCaptchaId !== null) {
-                        hcaptcha.reset(contactCaptchaId);
-                    }
+                    if (typeof hcaptcha !== "undefined") hcaptcha.reset();
                 } else {
                     result.textContent = data.message || t("contact.error");
                     result.classList.add("error");
