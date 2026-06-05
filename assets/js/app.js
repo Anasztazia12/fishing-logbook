@@ -126,7 +126,7 @@ function openContactModal() {
                     <button type="button" class="btn btn-secondary" id="closeContactModal">${t("common.close")}</button>
                 </div>
                 <form id="contactForm" class="stack" novalidate>
-                    <input type="hidden" name="access_key" value="b4c66ee3-69e7-4c59-a8c9-77d96ad55ac9">
+                    <input type="hidden" name="access_key" value="b4c66ee3-69e7-4c59-a8c9-77d96ad55ca9">
                     <label for="contactName">${t("contact.name")}</label>
                     <input type="text" id="contactName" name="name" required>
                     <label for="contactEmail">${t("contact.email")}</label>
