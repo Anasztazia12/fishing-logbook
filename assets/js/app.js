@@ -68,48 +68,31 @@ function openBgModal() {
     bgModalState.originalBackground = getCurrentBackground();
     bgModalState.previewBackground = bgModalState.originalBackground;
 
-    modal.style.display = "flex";
+    $(modal).css("display", "flex");
     modal.querySelectorAll(".bg-thumb").forEach(btn => {
         btn.onclick = () => {
             const img = btn.getAttribute("data-img");
-            if (!img) {
-                return;
-            }
-
+            if (!img) return;
             bgModalState.previewBackground = img;
             previewBackground(img);
         };
     });
 
-    const confirmBtn = document.getElementById("confirmBgModal");
-    if (confirmBtn) {
-        confirmBtn.onclick = () => {
-            setBackground(bgModalState.previewBackground);
-            closeBgModal(true);
-        };
-    }
+    document.getElementById("confirmBgModal").onclick = () => {
+        setBackground(bgModalState.previewBackground);
+        closeBgModal(true);
+    };
 
-    const closeBtn = document.getElementById("closeBgModal");
-    if (closeBtn) {
-        closeBtn.onclick = () => closeBgModal(false);
-    }
+    document.getElementById("closeBgModal").onclick = () => closeBgModal(false);
 
     modal.onclick = (event) => {
-        if (event.target === modal) {
-            closeBgModal(false);
-        }
+        if (event.target === modal) closeBgModal(false);
     };
 }
 
 function closeBgModal(keepPreview = false) {
-    const modal = document.getElementById("bgModal");
-    if (!keepPreview) {
-        previewBackground(bgModalState.originalBackground);
-    }
-
-    if (modal) {
-        modal.style.display = "none";
-    }
+    if (!keepPreview) previewBackground(bgModalState.originalBackground);
+    $("#bgModal").hide();
 }
 
 function openContactModal() {
@@ -272,11 +255,8 @@ const ImageStore = (() => {
 
 function applySavedBackground() {
     const img = localStorage.getItem("flb_bg");
-    if (img && AVAILABLE_BACKGROUNDS.includes(img)) {
-        document.body.style.backgroundImage = `url('assets/images/${img}')`;
-    } else {
-        document.body.style.backgroundImage = "url('assets/images/background.png')";
-    }
+    const bg = img && AVAILABLE_BACKGROUNDS.includes(img) ? img : "background.png";
+    document.body.style.backgroundImage = `url('assets/images/${bg}')`;
 }
 
 function ensureBrandIcon() {
@@ -965,8 +945,15 @@ async function migrateLocalImagesToIDB() {
 }
 
 async function loadFirebaseSdk() {
-    if (fbApp) {
-        return;
+    if (fbApp) return;
+
+    if (!window.$) {
+        await new Promise(resolve => {
+            const s = document.createElement("script");
+            s.src = "https://code.jquery.com/jquery-3.7.1.min.js";
+            s.onload = s.onerror = resolve;
+            document.head.appendChild(s);
+        });
     }
 
     const V = "10.12.4";
@@ -1364,21 +1351,13 @@ function renderNav(user) {
 }
 
 function isUserSessionActive(user) {
-    if (!user) {
-        return false;
-    }
-
-    if (user.isGuest) {
-        return true;
-    }
+    if (!user) return false;
+    if (user.isGuest) return true;
 
     const users = readStorage(STORAGE.users, []);
-    if (users.some((stored) => String(stored.email || "").toLowerCase() === String(user.email || "").toLowerCase())) {
-        return true;
-    }
+    if (users.some(u => (u.email || "").toLowerCase() === (user.email || "").toLowerCase())) return true;
 
-    // Valid if session came from Firebase sync (has id + email)
-    return Boolean(user.id && user.email);
+    return !!(user.id && user.email);
 }
 
 function ensureBootstrapStyles() {
@@ -1900,10 +1879,6 @@ async function initAddCatch(user) {
 
     fishRows.addEventListener("click", (event) => {
         const target = event.target;
-        if (!(target instanceof HTMLElement)) {
-            return;
-        }
-
         if (target.classList.contains("remove-row")) {
             const row = target.closest(".fish-row");
             if (row) {
@@ -1953,10 +1928,6 @@ async function initAddCatch(user) {
 
     imagePreview.addEventListener("click", (event) => {
         const target = event.target;
-        if (!(target instanceof HTMLElement)) {
-            return;
-        }
-
         const btn = target.closest(".preview-remove-btn");
         if (!btn) {
             return;
@@ -2213,10 +2184,6 @@ async function initLogbook(user) {
 
     container.addEventListener("click", (event) => {
         const target = event.target;
-        if (!(target instanceof HTMLElement)) {
-            return;
-        }
-
         const article = target.closest(".list-item[data-catch-id]");
         if (!article) {
             return;
@@ -2408,9 +2375,6 @@ async function initCatchDetails(user) {
 
     carousel.addEventListener("click", (event) => {
         const target = event.target;
-        if (!(target instanceof HTMLElement)) {
-            return;
-        }
         const btn = target.closest(".carousel-catch-card");
         if (!btn) {
             return;
@@ -2550,10 +2514,6 @@ function wirePhotoViewer(root) {
 
     root.addEventListener("click", (event) => {
         const target = event.target;
-        if (!(target instanceof HTMLElement)) {
-            return;
-        }
-
         const btn = target.closest(".photo-thumb-btn");
         if (!btn) {
             return;
@@ -2595,10 +2555,6 @@ function wireDetailActions(root, handlers) {
 
     root.addEventListener("click", (event) => {
         const target = event.target;
-        if (!(target instanceof HTMLElement)) {
-            return;
-        }
-
         const btn = target.closest(".detail-action");
         if (!btn) {
             return;
@@ -2847,10 +2803,6 @@ async function initPlaces(user) {
 
     placesList.addEventListener("click", (event) => {
         const target = event.target;
-        if (!(target instanceof HTMLElement)) {
-            return;
-        }
-
         const placeBtn = target.closest(".place-btn[data-entry-id]");
         if (!placeBtn) {
             return;
@@ -2886,10 +2838,6 @@ async function initPlaces(user) {
 
     imagePreview.addEventListener("click", (event) => {
         const target = event.target;
-        if (!(target instanceof HTMLElement)) {
-            return;
-        }
-
         const btn = target.closest(".place-image-remove-btn");
         if (!btn) {
             return;
@@ -2989,13 +2937,9 @@ async function initPlaces(user) {
 }
 
 function getCurrentUser() {
-    const raw = localStorage.getItem(STORAGE.currentUser);
-    if (!raw) {
-        return null;
-    }
-
     try {
-        return JSON.parse(raw);
+        const raw = localStorage.getItem(STORAGE.currentUser);
+        return raw ? JSON.parse(raw) : null;
     } catch {
         return null;
     }
@@ -3480,16 +3424,8 @@ function canvasToBlob(canvas, type, quality) {
 
 function normalizeImageFileName(originalName, mimeType) {
     const name = String(originalName || "photo");
-    const dotIndex = name.lastIndexOf(".");
-    const base = dotIndex > 0 ? name.slice(0, dotIndex) : name;
-
-    const extByMime = {
-        "image/jpeg": "jpg",
-        "image/png": "png",
-        "image/webp": "webp"
-    };
-
-    const ext = extByMime[mimeType] || "jpg";
+    const base = name.includes(".") ? name.slice(0, name.lastIndexOf(".")) : name;
+    const ext = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" }[mimeType] || "jpg";
     return `${base}.${ext}`;
 }
 
@@ -3667,45 +3603,32 @@ function renderCatchCard(item, compact) {
 }
 
 function groupByPlace(catches) {
-    return catches.reduce((acc, item) => {
+    const grouped = {};
+    for (const item of catches) {
         const key = getPrimaryPlaceLabel(item);
-        if (!acc[key]) {
-            acc[key] = [];
-        }
-
-        acc[key].push(item);
-        return acc;
-    }, {});
+        if (!grouped[key]) grouped[key] = [];
+        grouped[key].push(item);
+    }
+    return grouped;
 }
 
 function getLargestWeight(item) {
-    if (!item.fishItems || item.fishItems.length === 0) {
-        return 0;
-    }
-
-    return Math.max(...item.fishItems.map((f) => Number(f.weight) || 0));
+    if (!item.fishItems?.length) return 0;
+    return Math.max(...item.fishItems.map(f => Number(f.weight) || 0));
 }
 
 function parseOptionalNumber(value) {
-    if (value === null || value === undefined || value === "") {
-        return null;
-    }
-
+    if (value === null || value === undefined || value === "") return null;
     const n = Number(value);
     return Number.isFinite(n) ? n : null;
 }
 
-function withTimeout(promise, ms, errorMessage) {
-    let timeoutId;
-    const timeoutPromise = new Promise((_, reject) => {
-        timeoutId = setTimeout(() => {
-            reject(new Error(errorMessage || "Operation timed out."));
-        }, ms);
+function withTimeout(promise, ms, msg) {
+    let tid;
+    const timer = new Promise((_, reject) => {
+        tid = setTimeout(() => reject(new Error(msg || "Timed out.")), ms);
     });
-
-    return Promise.race([promise, timeoutPromise]).finally(() => {
-        clearTimeout(timeoutId);
-    });
+    return Promise.race([promise, timer]).finally(() => clearTimeout(tid));
 }
 
 function parseSaveError(error) {
@@ -3790,11 +3713,7 @@ function setupPasswordToggle(inputElement, toggleButton, translationPrefix) {
 function readStorage(key, fallback) {
     try {
         const raw = localStorage.getItem(key);
-        if (!raw) {
-            return fallback;
-        }
-
-        return JSON.parse(raw);
+        return raw ? JSON.parse(raw) : fallback;
     } catch {
         return fallback;
     }
@@ -3824,8 +3743,7 @@ function writeCatches(catches) {
 }
 
 function setMessage(el, text, ok) {
-    el.textContent = text;
-    el.className = `message ${ok ? "success" : "error"}`;
+    $(el).text(text).attr("class", "message " + (ok ? "success" : "error"));
 }
 
 function toFixed(value) {
@@ -3866,15 +3784,12 @@ function kgToLb(kg) {
 }
 
 function renderLanguageSwitch(extraClass = "") {
-    const className = ["lang-switch", extraClass].filter(Boolean).join(" ");
-
-    return [
-        `<div class="${className}" aria-label="${t("nav.lang")}">`,
-        `<span>${t("nav.lang")}</span>`,
-        `<button type="button" class="lang-btn ${currentLanguage === "en" ? "active" : ""}" data-lang="en">EN</button>`,
-        `<button type="button" class="lang-btn ${currentLanguage === "hu" ? "active" : ""}" data-lang="hu">HU</button>`,
-        `</div>`
-    ].join("");
+    const cls = ["lang-switch", extraClass].filter(Boolean).join(" ");
+    return `<div class="${cls}" aria-label="${t("nav.lang")}">
+        <span>${t("nav.lang")}</span>
+        <button type="button" class="lang-btn ${currentLanguage === "en" ? "active" : ""}" data-lang="en">EN</button>
+        <button type="button" class="lang-btn ${currentLanguage === "hu" ? "active" : ""}" data-lang="hu">HU</button>
+    </div>`;
 }
 
 function getLanguage() {
