@@ -2,7 +2,7 @@
 
 ## Responsive Devices Mockup Image
 
-![Fishing Logbook mockup](assets/images/responsive-devices-mockup.png)
+![Fishing Logbook mockup](assets/images/responsive-devices-mockup1.png)
 
 Fishing Logbook is a multi-page client-side web app built with HTML, CSS, and Vanilla JavaScript.
 
