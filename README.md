@@ -1,5 +1,9 @@
 # Fishing Logbook
 
+## Responsive Devices Mockup Image
+
+![Fishing Logbook mockup](assets/images/responsive-devices-mockup.png)
+
 Fishing Logbook is a multi-page client-side web app built with HTML, CSS, and Vanilla JavaScript.
 
 It helps anglers quickly record fishing sessions (place, fish details, photos, notes), then browse and filter saved entries through a responsive interface.
